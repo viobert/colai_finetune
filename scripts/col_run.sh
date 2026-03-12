@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,6 +27,9 @@ if [ -z "${MODEL_NAME:-}" ] && [ -n "${MODEL_PATH:-}" ]; then
     MODEL_NAME="$(basename "${MODEL_PATH}")"
 fi
 
+LOG_ROOT_DIR="${LOG_PATH_DIR}"
+SAVE_ROOT_DIR="${SAVE_DIR_BASE}"
+
 require_vars \
     MODEL_PATH DATASET_PATH SAVE_DIR_BASE LOG_PATH_DIR \
     GPUS BATCH_SIZE N_EPOCHS PLUGIN_NAME LR MICROBATCH_SIZE \
@@ -35,8 +40,8 @@ require_vars \
 NGPUS=$(echo "${GPUS}" | awk -F ',' '{print NF}')
 DATE_STAMP=$(date +%Y-%m-%d)
 TIME_STAMP=$(date +%H%M%S)
-LOG_PATH="${LOG_PATH_DIR}/${DATE_STAMP}"
-SAVE_DIR="${SAVE_DIR_BASE}/${DATE_STAMP}_${TIME_STAMP}"
+LOG_PATH="${LOG_ROOT_DIR}/${MODEL_NAME}/${DATE_STAMP}"
+SAVE_DIR="${SAVE_ROOT_DIR}/${MODEL_NAME}/${DATE_STAMP}_${TIME_STAMP}"
 mkdir -p "${LOG_PATH}"
 mkdir -p "${SAVE_DIR}"
 

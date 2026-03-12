@@ -1,11 +1,11 @@
-import os
-import wandb
 import dataclasses
-import pandas as pd
-from tqdm import tqdm
+import os
 from datetime import datetime
 from functools import partial
 from typing import Optional
+
+import pandas as pd
+from tqdm import tqdm
 
 import torch
 import torch.nn as nn
@@ -20,6 +20,11 @@ from colossalai.cluster import DistCoordinator
 
 from col_data_utils import load_json, save_json
 from .toolkit import DPORefToolkit, Toolkit
+
+try:
+    import wandb
+except ImportError:
+    wandb = None
 
 
 def get_model_numel(model: nn.Module, filter_: bool = False) -> int:
@@ -83,6 +88,8 @@ class Trainer:
         if self.wandb_config is None:
             self.wandb_config = WandbConfig()
         if self.wandb_config.enabled:
+            if wandb is None:
+                raise ImportError("wandb is enabled but the wandb package is not installed.")
             if not self.wandb_config.project:
                 raise ValueError("wandb is enabled but no project name was provided.")
             self.should_log_wandb = self.print_flag
@@ -157,12 +164,12 @@ class Trainer:
         self.dataloader.sampler.set_start_index(self.sampler_start_idx)
         for epoch in range(self.start_epoch, num_epochs):
             self.dataloader.sampler.set_epoch(epoch)
-            step_nums = self.num_steps_per_epoch - self.start_step
+            step_range = range(self.start_step, self.num_steps_per_epoch)
             dataloader_iter = iter(self.dataloader)
             status = [-1]
                 
             with tqdm(
-                range(step_nums),
+                step_range,
                 desc=f"Epoch {epoch}",
                 disable=not print_flag,
                 total=self.num_steps_per_epoch,
@@ -264,11 +271,11 @@ class RefTrainer(Trainer):
         self.dataloader.sampler.set_start_index(self.sampler_start_idx)
         for epoch in range(self.start_epoch, num_epochs):
             self.dataloader.sampler.set_epoch(epoch)
-            step_nums = self.num_steps_per_epoch - self.start_step
+            step_range = range(self.start_step, self.num_steps_per_epoch)
             dataloader_iter = iter(self.dataloader)
 
             with tqdm(
-                range(step_nums),
+                step_range,
                 desc=f"Epoch {epoch}",
                 disable=not print_flag,
                 total=self.num_steps_per_epoch,

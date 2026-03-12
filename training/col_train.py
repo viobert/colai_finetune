@@ -5,7 +5,7 @@ import resource
 from functools import partial
 from typing import Optional
 
-from datasets import concatenate_datasets, load_from_disk
+from datasets import load_from_disk
 
 import torch
 import torch.nn as nn
@@ -120,6 +120,9 @@ def main():
     parser.add_argument("--gemma", action="store_true", help="Use gemma model architecture")
     args = parser.parse_args()
 
+    if args.num_epochs <= 0:
+        raise ValueError("num_epochs must be greater than 0.")
+
     # ==============================
     # Initialize Distributed Training
     # ==============================
@@ -150,12 +153,12 @@ def main():
             sp_size=args.spsize,
             sequence_parallelism_mode=args.sp_mode,
             enable_sequence_parallelism=args.spsize > 1,
-            enable_flash_attention=True,
+            enable_flash_attention=args.flash_attention,
             num_microbatches=None,
             microbatch_size=args.microbatch_size,
             enable_jit_fused=False,
             zero_stage=0,
-            precision="bf16",
+            precision=args.mixed_precision,
             initial_scale=1,
             enable_metadata_cache=False
         )
@@ -193,7 +196,18 @@ def main():
     tokenizer.pad_token = tokenizer.eos_token
 
     dataset = load_from_disk(args.dataset)
-    train_ds = concatenate_datasets(dataset.values()).shuffle(seed=args.shuffle_seed)
+    if hasattr(dataset, "keys"):
+        if "train" not in dataset:
+            raise ValueError(
+                f"Loaded dataset dict from {args.dataset}, but no 'train' split was found."
+            )
+        coordinator.print_on_master(
+            f"Warning: dataset at {args.dataset} is a dataset dict, using dataset['train'] only."
+        )
+        train_ds = dataset["train"]
+    else:
+        train_ds = dataset
+    train_ds = train_ds.shuffle(seed=args.shuffle_seed)
     dataloader = prepare_dataloader(
         train_ds,
         batch_size=args.batch_size,
@@ -208,6 +222,11 @@ def main():
 
     if args.grad_checkpoint:
         model.gradient_checkpointing_enable()
+
+    if len(dataloader) == 0:
+        raise ValueError(
+            "The dataloader is empty. Check dataset size, batch_size, and drop_last settings."
+        )
 
     model_numel = get_model_numel(model, True)
     coordinator.print_on_master(f"Model params: {format_numel_str(model_numel)}")
