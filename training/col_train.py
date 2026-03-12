@@ -4,26 +4,27 @@ import resource
 from functools import partial
 from typing import Optional
 
+from datasets import concatenate_datasets, load_from_disk
+
 import torch
 import torch.nn as nn
 
-from datasets import load_from_disk, concatenate_datasets
-from transformers.models.llama.configuration_llama import LlamaConfig
+from transformers import AutoTokenizer
 from transformers.models.gemma2.configuration_gemma2 import Gemma2Config
 from transformers.models.llama.modeling_llama import LlamaForCausalLM
 from transformers.models.gemma2.modeling_gemma2 import Gemma2ForCausalLM
+from transformers.models.llama.configuration_llama import LlamaConfig
 from transformers.models.llama.tokenization_llama import LlamaTokenizer
-from transformers import AutoTokenizer
-
-from col_lora import convert_to_lora_module
-from col_data_utils import prepare_dataloader
-from colToolkit import Toolkit, Trainer
 
 import colossalai
 from colossalai.booster.plugin import HybridParallelPlugin, LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.lr_scheduler import CosineAnnealingWarmupLR
 from colossalai.nn.optimizer import HybridAdam
+
+from col_data_utils import prepare_dataloader
+from col_lora import convert_to_lora_module
+from colToolkit import Toolkit, Trainer, WandbConfig
 
 
 def get_model_numel(model: nn.Module, filter_: bool = False) -> int:
@@ -104,6 +105,10 @@ def main():
     parser.add_argument("--lora", default=0, type=int)
     parser.add_argument("--grad_accum", default=1, type=int)
     parser.add_argument("-seed", "--shuffle_seed", type=int, default=37, help="Shuffle seed")
+    parser.add_argument("--use_wandb", action="store_true", help="Log training metrics to Weights & Biases")
+    parser.add_argument("--wandb_project", type=str, default=None, help="Weights & Biases project name")
+    parser.add_argument("--wandb_entity", type=str, default=None, help="Weights & Biases entity")
+    parser.add_argument("--wandb_run_name", type=str, default=None, help="Weights & Biases run name")
     parser.add_argument(
         "--sp_mode",
         default="all_to_all",
@@ -228,6 +233,13 @@ def main():
         f"Booster init max CPU memory: {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024:.2f} MB"
     )
 
+    wandb_config = WandbConfig(
+        enabled=args.use_wandb,
+        project=args.wandb_project,
+        entity=args.wandb_entity,
+        run_name=args.wandb_run_name,
+    )
+
     trainer = Trainer(
         booster=booster,
         coordinator=coordinator,
@@ -237,7 +249,8 @@ def main():
         lr_scheduler=lr_scheduler,
         vocab_size=tokenizer.vocab_size,
         save_dir=args.save_dir,
-        enable_tensorboard=False,
+        print_flag=print_flag,
+        wandb_config=wandb_config,
     )
     if args.load is not None:
         coordinator.print_on_master("Loading checkpoint")

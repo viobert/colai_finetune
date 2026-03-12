@@ -1,43 +1,25 @@
-import argparse
-import math
 import os
-import resource
-from datetime import datetime
-from contextlib import nullcontext
-from functools import partial
-from typing import Optional, Tuple
-from .toolkit import Toolkit, DPORefToolkit
-from .criterion import DistCrossEntropy
+import wandb
+import dataclasses
 import pandas as pd
+from tqdm import tqdm
 from datetime import datetime
-from torch.distributed import ProcessGroup
+from functools import partial
+from typing import Optional
 
 import torch
-import torch.distributed as dist
 import torch.nn as nn
-import torch.nn.functional as F
-from col_data_utils import load_json, prepare_dataloader, save_json, collate_fn
-from datasets import load_dataset, load_from_disk
+import torch.distributed as dist
+from torch.distributed import ProcessGroup
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
-from transformers.models.llama.configuration_llama import LlamaConfig
-from transformers.models.llama.modeling_llama import LlamaForCausalLM
-from transformers.models.llama.tokenization_llama import LlamaTokenizer
-from transformers import AutoTokenizer
-# from peft import LoraConfig, get_peft_model
 
-import colossalai
-from colossalai.accelerator import get_accelerator
 from colossalai.booster import Booster
-from colossalai.booster.plugin import GeminiPlugin, HybridParallelPlugin, LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
-from colossalai.lazy import LazyInitContext
-from colossalai.nn.lr_scheduler import CosineAnnealingWarmupLR
-from colossalai.nn.optimizer import HybridAdam
-from colossalai.tensor import ColoTensor
+
+from col_data_utils import load_json, save_json
+from .toolkit import DPORefToolkit, Toolkit
 
 
 def get_model_numel(model: nn.Module, filter_: bool = False) -> int:
@@ -71,6 +53,14 @@ def _criterion(outputs, inputs):
     return outputs.loss
 
 
+@dataclasses.dataclass
+class WandbConfig:
+    enabled: bool = False
+    project: Optional[str] = None
+    entity: Optional[str] = None
+    run_name: Optional[str] = None
+
+
 class Trainer:
     def __init__(
             self, booster: Booster, coordinator: DistCoordinator,
@@ -85,8 +75,23 @@ class Trainer:
         self.num_steps_per_epoch = len(dataloader)
         self.vocab_size = vocab_size
         self.save_dir = save_dir
-        self.enable_tensorboard = kwargs.get("enable_tensorboard", True)
-        self.writer = SummaryWriter(log_dir=os.path.join(save_dir, "tb_logs")) if self.enable_tensorboard else None
+        self.print_flag = kwargs.get("print_flag", False)
+        self.wandb_config = kwargs.get("wandb_config")
+        self.should_log_wandb = False
+
+        if self.wandb_config is None:
+            self.wandb_config = WandbConfig()
+        if self.wandb_config.enabled:
+            if not self.wandb_config.project:
+                raise ValueError("wandb is enabled but no project name was provided.")
+            self.should_log_wandb = self.print_flag
+            if self.should_log_wandb:
+                wandb.init(
+                    project=self.wandb_config.project,
+                    entity=self.wandb_config.entity,
+                    name=self.wandb_config.run_name,
+                    dir=self.save_dir,
+                )
 
     def load(self, load_dir: str):
         if load_dir is None:
@@ -197,8 +202,11 @@ class Trainer:
                         all_reduce_mean(loss)
                     if print_flag:
                         pbar.set_postfix({"loss": loss.item()})
-                        if self.writer is not None:
-                            self.writer.add_scalar('Loss/train', loss.item(), global_step=(step+1) + self.num_steps_per_epoch * epoch)
+                        if self.should_log_wandb:
+                            wandb.log(
+                                {"train/loss": loss.item()},
+                                step=(step + 1) + self.num_steps_per_epoch * epoch,
+                            )
 
                     if save_interval > 0 and (step + 1) % save_interval == 0:
                         self.coordinator.print_on_master(f"Saving checkpoint")
@@ -209,15 +217,14 @@ class Trainer:
             self.dataloader.sampler.set_start_index(0)
             self.start_step = 0
 
+        if self.should_log_wandb:
+            wandb.finish()
         self.coordinator.print_on_master(f"Saving checkpoint")
         self.save(epoch, step + 1, batch_size)
         self.coordinator.print_on_master(
             f"Saved checkpoint at epoch {epoch} step {step + 1}")
         self.coordinator.print_on_master(
             f"Max CUDA memory usage: {torch.cuda.max_memory_allocated()/1024**2:.2f} MB")
-        
-        if self.writer is not None:
-            self.writer.close()
 
 
 class RefTrainer(Trainer):
