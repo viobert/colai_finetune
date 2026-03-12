@@ -196,7 +196,8 @@ class Trainer:
                             criterion,
                             self.optimizer,
                             return_loss=True,
-                            return_outputs=True,
+                            # return_outputs=True,
+                            return_outputs=False,
                         )
                         loss = result['loss']
                     else:
@@ -291,7 +292,7 @@ class RefTrainer(Trainer):
                             result = self.booster.execute_pipeline(
                                 iter([input]), self.model,
                                 lambda output, _: toolkit.compute_loss(batch, output),
-                                optimizer=None, return_loss=True, return_outputs=True
+                                optimizer=None, return_loss=True,return_outputs=True
                             )
                             # print(f"result:: {result}")
 
