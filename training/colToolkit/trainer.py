@@ -59,6 +59,7 @@ class WandbConfig:
     project: Optional[str] = None
     entity: Optional[str] = None
     run_name: Optional[str] = None
+    config: Optional[dict] = None
 
 
 class Trainer:
@@ -91,6 +92,7 @@ class Trainer:
                     entity=self.wandb_config.entity,
                     name=self.wandb_config.run_name,
                     dir=self.save_dir,
+                    config=self.wandb_config.config,
                 )
 
     def load(self, load_dir: str):
@@ -145,10 +147,13 @@ class Trainer:
             self,
             toolkit=Toolkit, toolkit_kwargs: dict = None,
             num_epochs: int = 1, batch_size: int = 1,
-            save_interval: int = -1,
+            save_interval: Optional[int] = None,
             print_flag: bool = False,
             grad_accum: int = 1, use_pipeline: bool = False,
     ):
+        if save_interval is None:
+            save_interval = self.num_steps_per_epoch
+
         self.dataloader.sampler.set_start_index(self.sampler_start_idx)
         for epoch in range(self.start_epoch, num_epochs):
             self.dataloader.sampler.set_epoch(epoch)
@@ -219,7 +224,7 @@ class Trainer:
 
         if self.should_log_wandb:
             wandb.finish()
-        self.coordinator.print_on_master(f"Saving checkpoint")
+        self.coordinator.print_on_master("Saving checkpoint..")
         self.save(epoch, step + 1, batch_size)
         self.coordinator.print_on_master(
             f"Saved checkpoint at epoch {epoch} step {step + 1}")

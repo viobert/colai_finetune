@@ -1,5 +1,6 @@
 import argparse
 import math
+import os
 import resource
 from functools import partial
 from typing import Optional
@@ -17,6 +18,7 @@ from transformers.models.llama.configuration_llama import LlamaConfig
 from transformers.models.llama.tokenization_llama import LlamaTokenizer
 
 import colossalai
+from colossalai.booster import Booster
 from colossalai.booster.plugin import HybridParallelPlugin, LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.lr_scheduler import CosineAnnealingWarmupLR
@@ -93,7 +95,7 @@ def main():
     parser.add_argument("-g", "--grad_checkpoint", action="store_true", help="Use gradient checkpointing")
     parser.add_argument("-l", "--max_length", type=int, default=4096, help="Max sequence length")
     parser.add_argument("-x", "--mixed_precision", default="bf16", choices=["fp16", "bf16"], help="Mixed precision")
-    parser.add_argument("-i", "--save_interval", type=int, default=1000, help="Save interval")
+    parser.add_argument("-i", "--save_interval", type=int, default=None, help="Save interval in steps; default saves at each epoch end")
     parser.add_argument("-o", "--save_dir", type=str, default="checkpoint", help="Checkpoint directory")
     parser.add_argument("-f", "--load", type=str, default=None, help="Load checkpoint")
     parser.add_argument("--grad_clip", type=float, default=1.0, help="Gradient clipping")
@@ -233,11 +235,21 @@ def main():
         f"Booster init max CPU memory: {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024:.2f} MB"
     )
 
+    dataset_name = os.path.basename(os.path.normpath(args.dataset))
+    model_name = os.path.basename(os.path.normpath(args.model_path))
+
     wandb_config = WandbConfig(
         enabled=args.use_wandb,
         project=args.wandb_project,
         entity=args.wandb_entity,
-        run_name=args.wandb_run_name,
+        run_name=args.wandb_run_name if args.wandb_run_name else model_name,
+        config={
+            "dataset": dataset_name,
+            "batch_size": args.batch_size,
+            "micro_batch_size": args.microbatch_size,
+            "num_epochs": args.num_epochs,
+            "learning_rate": args.lr,
+        },
     )
 
     trainer = Trainer(
