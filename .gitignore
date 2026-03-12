@@ -1,2 +1,5 @@
 .stignore
 /stfolder
+.vscode
+
+__pycache__/

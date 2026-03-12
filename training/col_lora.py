@@ -94,8 +94,7 @@ class LoraLinear(lora.LoRALayer, nn.Module):
 
         if self.r > 0 and not self.merged:
             result = F.linear(x, T(self.weight), bias=self.bias)
-            if self.r > 0:
-                result = result + (self.lora_dropout(x) @ self.lora_A.t() @ self.lora_B.t()) * self.scaling
+            result = result + (self.lora_dropout(x) @ self.lora_A.t() @ self.lora_B.t()) * self.scaling
             return result
         else:
             return F.linear(x, T(self.weight), bias=self.bias)

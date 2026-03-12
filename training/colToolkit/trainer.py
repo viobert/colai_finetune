@@ -85,11 +85,12 @@ class Trainer:
         self.num_steps_per_epoch = len(dataloader)
         self.vocab_size = vocab_size
         self.save_dir = save_dir
-        self.writer = SummaryWriter(log_dir=os.path.join(save_dir, "tb_logs"))
+        self.enable_tensorboard = kwargs.get("enable_tensorboard", True)
+        self.writer = SummaryWriter(log_dir=os.path.join(save_dir, "tb_logs")) if self.enable_tensorboard else None
 
     def load(self, load_dir: str):
         if load_dir is None:
-            self.start_epoch, self.start_step, self.sampler_start_idx = 0, 0, 87
+            self.start_epoch, self.start_step, self.sampler_start_idx = 0, 0, 0
             return 0, 0, 0
         self.booster.load_model(self.model, os.path.join(load_dir, "model"))
         self.booster.load_optimizer(self.optimizer, os.path.join(load_dir, "optimizer"))
@@ -181,13 +182,10 @@ class Trainer:
                             return_loss=True,
                             return_outputs=True,
                         )
-                        # print(f"result:: {result}")
                         loss = result['loss']
-                        # print(f"loss:: {loss}")
                     else:
                         output = self.model(**input)
-                        loss = toolkit.compute_loss(batch, output)
-                        # print(f"loss:: {loss}")
+                        loss = toolkit.compute_loss(output, batch)
                         self.booster.backward(loss, self.optimizer)
 
                     if (step + 1) % grad_accum == 0:
@@ -199,7 +197,8 @@ class Trainer:
                         all_reduce_mean(loss)
                     if print_flag:
                         pbar.set_postfix({"loss": loss.item()})
-                        self.writer.add_scalar('Loss/train', loss.item(), global_step=(step+1) + self.num_steps_per_epoch * epoch)
+                        if self.writer is not None:
+                            self.writer.add_scalar('Loss/train', loss.item(), global_step=(step+1) + self.num_steps_per_epoch * epoch)
 
                     if save_interval > 0 and (step + 1) % save_interval == 0:
                         self.coordinator.print_on_master(f"Saving checkpoint")
@@ -217,7 +216,8 @@ class Trainer:
         self.coordinator.print_on_master(
             f"Max CUDA memory usage: {torch.cuda.max_memory_allocated()/1024**2:.2f} MB")
         
-        self.writer.close()
+        if self.writer is not None:
+            self.writer.close()
 
 
 class RefTrainer(Trainer):

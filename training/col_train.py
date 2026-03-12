@@ -1,42 +1,27 @@
 import argparse
 import math
-import os
 import resource
-import time
-from contextlib import nullcontext
 from functools import partial
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 
-from datasets import load_dataset, load_from_disk, concatenate_datasets
-from torch.optim import Optimizer
-from torch.optim.lr_scheduler import _LRScheduler
-from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
+from datasets import load_from_disk, concatenate_datasets
 from transformers.models.llama.configuration_llama import LlamaConfig
-# from transformers.models.gemma3.configuration_gemma3 import Gemma3Config
 from transformers.models.gemma2.configuration_gemma2 import Gemma2Config
 from transformers.models.llama.modeling_llama import LlamaForCausalLM
-# from transformers.models.gemma3.modeling_gemma3 import Gemma3ForCausalLM, Gemma3ForConditionalGeneration
 from transformers.models.gemma2.modeling_gemma2 import Gemma2ForCausalLM
 from transformers.models.llama.tokenization_llama import LlamaTokenizer
 from transformers import AutoTokenizer
-# from peft import LoraConfig, get_peft_model
 
 from col_lora import convert_to_lora_module
-from col_flash_attn import replace_with_flash_attention, replace_pipeline
-from col_data_utils import load_json, prepare_dataloader, save_json, collate_fn
-from colToolkit import DistCrossEntropy
+from col_data_utils import prepare_dataloader
+from colToolkit import Toolkit, Trainer
 
 import colossalai
-from colossalai.accelerator import get_accelerator
-from colossalai.booster import Booster
-from colossalai.booster.plugin import GeminiPlugin, HybridParallelPlugin, LowLevelZeroPlugin
+from colossalai.booster.plugin import HybridParallelPlugin, LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
-from colossalai.lazy import LazyInitContext
 from colossalai.nn.lr_scheduler import CosineAnnealingWarmupLR
 from colossalai.nn.optimizer import HybridAdam
 
@@ -85,51 +70,6 @@ def tokenize_batch_for_finetune(
     data = {k: v.cuda() for k, v in data.items()}
     return data
 
-
-
-def all_reduce_mean(tensor: torch.Tensor) -> torch.Tensor:
-    dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
-    tensor = tensor.data
-    tensor.div_(dist.get_world_size())
-    return tensor
-
-
-def save(
-    booster: Booster,
-    model: nn.Module,
-    optimizer: Optimizer,
-    lr_scheduler: _LRScheduler,
-    epoch: int,
-    step: int,
-    batch_size: int,
-    coordinator: DistCoordinator,
-    save_dir: str,
-):
-    save_dir = os.path.join(save_dir, f"epoch{epoch}-step{step}")
-    os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
-
-    booster.save_model(model, os.path.join(save_dir, "model"), shard=True)
-    booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True)
-    booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
-    running_states = {
-        "epoch": epoch,
-        "step": step,
-        "sample_start_index": step * batch_size,
-    }
-    if coordinator.is_master():
-        save_json(running_states, os.path.join(save_dir, "running_states.json"))
-
-
-def load(
-    booster: Booster, model: nn.Module, optimizer: Optimizer, lr_scheduler: _LRScheduler, load_dir: str
-) -> Tuple[int, int, int]:
-    booster.load_model(model, os.path.join(load_dir, "model"))
-    booster.load_optimizer(optimizer, os.path.join(load_dir, "optimizer"))
-    booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))
-    running_states = load_json(os.path.join(load_dir, "running_states.json"))
-    return running_states["epoch"], running_states["step"], running_states["sample_start_index"]
-
-
 def main():
     # ==============================
     # Parse Arguments
@@ -139,7 +79,7 @@ def main():
     parser.add_argument(
         "-p",
         "--plugin",
-        choices=["gemini", "gemini_auto", "zero2", "zero2_cpu", "hybrid_parallel"],
+        choices=["zero2", "zero2_cpu", "hybrid_parallel"],
         default="hybrid_parallel",
         help="Choose which plugin to use",
     )
@@ -156,7 +96,6 @@ def main():
     parser.add_argument("-o", "--save_dir", type=str, default="checkpoint", help="Checkpoint directory")
     parser.add_argument("-f", "--load", type=str, default=None, help="Load checkpoint")
     parser.add_argument("--grad_clip", type=float, default=1.0, help="Gradient clipping")
-    parser.add_argument("-t", "--tensorboard_dir", type=str, default="tb_logs", help="Tensorboard directory")
     parser.add_argument("-a", "--flash_attention", action="store_true", help="Use Flash Attention")
     parser.add_argument("--ppsize", default=2, type=int)
     parser.add_argument("--tpsize", default=4, type=int)
@@ -184,13 +123,7 @@ def main():
     # Initialize Booster
     # ==============================
     args.pptp_size = None
-    if args.plugin == "gemini":
-        plugin = GeminiPlugin(precision=args.mixed_precision, initial_scale=2**16, max_norm=args.grad_clip)
-    elif args.plugin == "gemini_auto":
-        plugin = GeminiPlugin(
-            precision=args.mixed_precision, placement_policy="auto", initial_scale=2**16, max_norm=args.grad_clip
-        )
-    elif args.plugin == "zero2":
+    if args.plugin == "zero2":
         plugin = LowLevelZeroPlugin(
             stage=2, precision=args.mixed_precision, initial_scale=2**16, max_norm=args.grad_clip
         )
@@ -229,35 +162,10 @@ def main():
     print_flag = (not use_pipeline and coordinator.is_master()) or (use_pipeline and is_pp_last_stage)
 
     # ==============================
-    # Initialize Tensorboard
-    # ==============================
-    if print_flag:
-        os.makedirs(args.tensorboard_dir, exist_ok=True)
-        # writer = SummaryWriter(args.tensorboard_dir)
-
-    # ==============================
     # Initialize Model, Optimizer and LR Scheduler
     # ==============================
-
-    # config = LlamaConfig.from_pretrained(args.model_path, 
-    #                                      torch_dtype = torch.bfloat16 if args.mixed_precision == 'bf16' else \
-    #                                                    torch.float16 if args.mixed_precision == 'fp16' else None,
-    #                                      attn_implementation="flash_attention_2" if args.flash_attention else "eager")
-    # # use lazy init when using GeminiPlugin
-    # init_ctx = (
-    #     LazyInitContext(default_device=get_accelerator().get_current_device())
-    #     if isinstance(plugin, GeminiPlugin)
-    #     else nullcontext()
-    # )
-
-    # with init_ctx:
-    #     model = LlamaForCausalLM(config)
-    #     if args.lora != 0:
-    #         # model.enable_input_require_grads()
-    #         model = convert_to_lora_module(model, args.lora)
-
-    config_class = Gemma2Config if args.gemma else LlamaConfig
-    model_class = Gemma2ForCausalLM if args.gemma else LlamaForCausalLM
+    config_class = LlamaConfig if not args.gemma else Gemma2Config
+    model_class = LlamaForCausalLM if not args.gemma else Gemma2ForCausalLM
 
     config = config_class.from_pretrained(
         args.model_path,
@@ -266,17 +174,9 @@ def main():
         attn_implementation="flash_attention_2" if args.flash_attention else "eager"
     )
 
-    init_ctx = (
-        LazyInitContext(default_device=get_accelerator().get_current_device())
-        if isinstance(plugin, GeminiPlugin)
-        else nullcontext()
-    )
-
-    with init_ctx:
-        model = model_class(config)
-        if args.lora != 0:
-            # model.enable_input_require_grads()
-            model = convert_to_lora_module(model, args.lora)
+    model = model_class(config)
+    if args.lora != 0:
+        model = convert_to_lora_module(model, args.lora)
 
     # ==============================
     # Initialize Tokenizer, Dataset and Dataloader
@@ -301,11 +201,6 @@ def main():
 
     if args.grad_checkpoint:
         model.gradient_checkpointing_enable()
-    # if args.flash_attention:
-    #     coordinator.print_on_master("Using FlashAttention...")
-    #     replace_with_flash_attention(model)
-    #     if isinstance(plugin, HybridParallelPlugin):
-    #         replace_pipeline()
 
     model_numel = get_model_numel(model, True)
     coordinator.print_on_master(f"Model params: {format_numel_str(model_numel)}")
@@ -327,99 +222,37 @@ def main():
     torch.set_default_dtype(torch.float)
 
     booster.load_model(model, args.model_path)
-    
-    # save_dir = os.path.join(args.save_dir, f"epoch{10086}-step{0}")
-    # os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
-    # model.eval()
-    # booster.save_model(model, os.path.join(save_dir, "model"), shard=True)
-    # return
-    # model.train()
 
     coordinator.print_on_master(f"Booster init max CUDA memory: {torch.cuda.max_memory_allocated()/1024**2:.2f} MB")
     coordinator.print_on_master(
         f"Booster init max CPU memory: {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024:.2f} MB"
     )
 
-    # load checkpoint if specified
-    start_epoch = 0
-    start_step = 0
-    sampler_start_idx = 0
+    trainer = Trainer(
+        booster=booster,
+        coordinator=coordinator,
+        model=model,
+        dataloader=dataloader,
+        optimizer=optimizer,
+        lr_scheduler=lr_scheduler,
+        vocab_size=tokenizer.vocab_size,
+        save_dir=args.save_dir,
+        enable_tensorboard=False,
+    )
     if args.load is not None:
         coordinator.print_on_master("Loading checkpoint")
-        start_epoch, start_step, sampler_start_idx = load(booster, model, optimizer, lr_scheduler, args.load)
+        start_epoch, start_step, _ = trainer.load(args.load)
         coordinator.print_on_master(f"Loaded checkpoint {args.load} at epoch {start_epoch} step {start_step}")
 
-    num_steps_per_epoch = len(dataloader)
-    # pg = booster.plugin.shard_config.tensor_parallel_process_group
-    def _criterion(outputs, inputs):
-        return outputs.loss
-
-    # if resume training, set the sampler start index to the correct value
-    dataloader.sampler.set_start_index(sampler_start_idx)
-    writer = SummaryWriter(log_dir=os.path.join(args.save_dir, "tb_logs"))
-    for epoch in range(start_epoch, args.num_epochs):
-        dataloader.sampler.set_epoch(epoch)
-        step_nums = num_steps_per_epoch - start_step
-        dataloader_iter = iter(dataloader)
-
-        # display = print_flag and coordinator.is_master()
-        with tqdm(
-            range(step_nums),
-            desc=f"Epoch {epoch}",
-            disable=not print_flag,
-            total=num_steps_per_epoch,
-            initial=start_step,
-        ) as pbar:
-            for step in pbar:
-                model.train()
-                if use_pipeline:
-                    batch = next(dataloader_iter)
-                    outputs = booster.execute_pipeline(
-                        iter([batch]), model, _criterion, optimizer, return_loss=True, return_outputs=False
-                    )
-                    loss = outputs["loss"]
-                else:
-                    batch = next(dataloader_iter)
-                    outputs = model(**batch)
-                    loss = outputs[0]
-                    booster.backward(loss, optimizer)
-
-                if (step + 1) % args.grad_accum == 0:
-                    optimizer.step()
-                    lr_scheduler.step()
-                    optimizer.zero_grad()
-
-                if not use_pipeline:
-                    all_reduce_mean(loss)
-                if print_flag:
-                    pbar.set_postfix({"loss": loss.item()})
-                    writer.add_scalar("loss", loss.item(), epoch * num_steps_per_epoch + step)
-
-                if args.save_interval > 0 and (step_nums * epoch + step + 1) % args.save_interval == 0:
-                    coordinator.print_on_master(f"Saving checkpoint")
-                    save(
-                        booster,
-                        model,
-                        optimizer,
-                        lr_scheduler,
-                        epoch,
-                        step + 1,
-                        args.batch_size,
-                        coordinator,
-                        args.save_dir,
-                    )
-                    coordinator.print_on_master(f"Saved checkpoint at epoch {epoch} step {step + 1}")
-        # the continue epochs are not resumed, so we need to reset the sampler start index and start step
-        dataloader.sampler.set_start_index(0)
-        start_step = 0
-
-    writer.close()
-    coordinator.print_on_master(f"Saving checkpoint")
-    save(booster, model, optimizer, lr_scheduler,
-         epoch, step + 1, args.batch_size, coordinator,
-         args.save_dir)
-    coordinator.print_on_master(f"Saved checkpoint at epoch {epoch} step {step + 1}")
-    coordinator.print_on_master(f"Max CUDA memory usage: {torch.cuda.max_memory_allocated()/1024**2:.2f} MB")
+    trainer.training_loop(
+        toolkit=Toolkit,
+        num_epochs=args.num_epochs,
+        batch_size=args.batch_size,
+        save_interval=args.save_interval,
+        print_flag=print_flag,
+        grad_accum=args.grad_accum,
+        use_pipeline=use_pipeline,
+    )
 
 
 if __name__ == "__main__":
