@@ -9,6 +9,7 @@ from datasets import concatenate_datasets, load_from_disk
 
 import torch
 import torch.nn as nn
+import torch.distributed as dist
 
 from transformers import AutoTokenizer
 from transformers.models.gemma2.configuration_gemma2 import Gemma2Config
@@ -47,6 +48,27 @@ def format_numel_str(numel: int) -> str:
         return f"{numel / K:.2f} K"
     else:
         return f"{numel}"
+
+
+def get_parallel_ranks(booster: Booster):
+    tp_rank = 0
+    dp_rank = 0
+    is_last_stage = False
+    use_pipeline = False
+
+    if isinstance(booster.plugin, HybridParallelPlugin):
+        plugin = booster.plugin
+        use_pipeline = plugin.pp_size > 1
+        if use_pipeline:
+            is_last_stage = plugin.stage_manager.is_last_stage()
+
+        if hasattr(plugin, "tp_group") and plugin.tp_group is not None:
+            tp_rank = dist.get_rank(group=plugin.tp_group)
+
+        if hasattr(plugin, "dp_group") and plugin.dp_group is not None:
+            dp_rank = dist.get_rank(group=plugin.dp_group)
+
+    return tp_rank, dp_rank, is_last_stage, use_pipeline
 
 def tokenize_batch_for_finetune(
     batch, tokenizer: Optional[LlamaTokenizer] = None,
@@ -173,9 +195,12 @@ def main():
 
     booster = Booster(plugin=plugin)
 
-    use_pipeline = isinstance(booster.plugin, HybridParallelPlugin) and booster.plugin.pp_size > 1
-    is_pp_last_stage = use_pipeline and booster.plugin.stage_manager.is_last_stage()
-    print_flag = (not use_pipeline and coordinator.is_master()) or (use_pipeline and is_pp_last_stage)
+    tp_rank, dp_rank, is_last_stage, use_pipeline = get_parallel_ranks(booster)
+    if use_pipeline:
+        print_flag = is_last_stage and tp_rank == 0 and dp_rank == 0
+    else:
+        print_flag = coordinator.is_master()
+    should_log_wandb = print_flag
 
     # ==============================
     # Initialize Model, Optimizer and LR Scheduler
@@ -295,6 +320,7 @@ def main():
         vocab_size=tokenizer.vocab_size,
         save_dir=args.save_dir,
         print_flag=print_flag,
+        should_log_wandb=should_log_wandb,
         wandb_config=wandb_config,
     )
     if args.load is not None:

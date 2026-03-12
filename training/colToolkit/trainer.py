@@ -82,8 +82,8 @@ class Trainer:
         self.vocab_size = vocab_size
         self.save_dir = save_dir
         self.print_flag = kwargs.get("print_flag", False)
+        self.should_log_wandb = kwargs.get("should_log_wandb", False)
         self.wandb_config = kwargs.get("wandb_config")
-        self.should_log_wandb = False
 
         if self.wandb_config is None:
             self.wandb_config = WandbConfig()
@@ -92,7 +92,6 @@ class Trainer:
                 raise ImportError("wandb is enabled but the wandb package is not installed.")
             if not self.wandb_config.project:
                 raise ValueError("wandb is enabled but no project name was provided.")
-            self.should_log_wandb = self.print_flag
             if self.should_log_wandb:
                 wandb.init(
                     project=self.wandb_config.project,
