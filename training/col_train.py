@@ -5,7 +5,7 @@ import resource
 from functools import partial
 from typing import Optional
 
-from datasets import load_from_disk
+from datasets import concatenate_datasets, load_from_disk
 
 import torch
 import torch.nn as nn
@@ -87,6 +87,12 @@ def main():
         help="Choose which plugin to use",
     )
     parser.add_argument("-d", "--dataset", type=str, default="yizhongw/self_instruct", help="Data set path")
+    parser.add_argument(
+        "--split",
+        type=str,
+        default="",
+        help="Dataset split to use. If empty and a DatasetDict is loaded, all splits are concatenated.",
+    )
     parser.add_argument("--task_name", type=str, default="super_natural_instructions", help="task to run")
     parser.add_argument("-e", "--num_epochs", type=int, default=1, help="Number of epochs")
     parser.add_argument("-b", "--batch_size", type=int, default=2, help="Local batch size")
@@ -106,7 +112,7 @@ def main():
     parser.add_argument("--microbatch_size", default=2, type=int)
     parser.add_argument("--lora", default=0, type=int)
     parser.add_argument("--grad_accum", default=1, type=int)
-    parser.add_argument("-seed", "--shuffle_seed", type=int, default=37, help="Shuffle seed")
+    parser.add_argument("-seed", "--shuffle_seed", type=int, default=42, help="Shuffle seed")
     parser.add_argument("--use_wandb", action="store_true", help="Log training metrics to Weights & Biases")
     parser.add_argument("--wandb_project", type=str, default=None, help="Weights & Biases project name")
     parser.add_argument("--wandb_entity", type=str, default=None, help="Weights & Biases entity")
@@ -197,15 +203,23 @@ def main():
 
     dataset = load_from_disk(args.dataset)
     if hasattr(dataset, "keys"):
-        if "train" not in dataset:
-            raise ValueError(
-                f"Loaded dataset dict from {args.dataset}, but no 'train' split was found."
-            )
-        coordinator.print_on_master(
-            f"Warning: dataset at {args.dataset} is a dataset dict, using dataset['train'] only."
-        )
-        train_ds = dataset["train"]
+        split_names = list(dataset.keys())
+        if args.split:
+            if args.split not in dataset:
+                raise ValueError(
+                    f"Requested split '{args.split}' was not found in dataset {args.dataset}. "
+                    f"Available splits: {split_names}")
+            coordinator.print_on_master(
+                f"Warning: dataset at {args.dataset} is a DatasetDict. Using split '{args.split}' only.")
+            train_ds = dataset[args.split]
+        else:
+            coordinator.print_on_master(
+                f"Warning: dataset at {args.dataset} is a DatasetDict and no split was provided. "
+                f"Concatenating all splits: {split_names}.")
+            train_ds = concatenate_datasets([dataset[split_name] for split_name in split_names])
     else:
+        coordinator.print_on_master(
+                f"Warning: dataset at {args.dataset} is a single Dataset. Using it directly.")
         train_ds = dataset
     train_ds = train_ds.shuffle(seed=args.shuffle_seed)
     dataloader = prepare_dataloader(

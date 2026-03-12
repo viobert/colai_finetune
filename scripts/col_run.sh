@@ -41,13 +41,14 @@ NGPUS=$(echo "${GPUS}" | awk -F ',' '{print NF}')
 DATE_STAMP=$(date +%Y-%m-%d)
 TIME_STAMP=$(date +%H%M%S)
 LOG_PATH="${LOG_ROOT_DIR}/${MODEL_NAME}/${DATE_STAMP}"
-SAVE_DIR="${SAVE_ROOT_DIR}/${MODEL_NAME}/${DATE_STAMP}_${TIME_STAMP}"
+SAVE_DIR="${SAVE_ROOT_DIR}/${MODEL_NAME}/${DATE_STAMP}/${TIME_STAMP}"
 mkdir -p "${LOG_PATH}"
 mkdir -p "${SAVE_DIR}"
+LOG_FILE="${LOG_PATH}/[${MODEL_NAME}]_${TIME_STAMP}.log"
 
 # # Llama
-export NCCL_DEBUG="TRACE"
-export NCCL_DEBUG_SUBSYS="INIT,GRAPH,ENV"
+# export NCCL_DEBUG="TRACE"
+# export NCCL_DEBUG_SUBSYS="INIT,GRAPH,ENV"
 export NCCL_P2P_LEVEL=NVL
 CMD=(
     colossalai run --nproc_per_node "${NGPUS}" --master_port 2955${GPUS:0:1}
@@ -64,6 +65,10 @@ if [ -n "${SAVE_INTERVAL:-}" ]; then
     CMD+=(--save_interval "${SAVE_INTERVAL}")
 fi
 
+if [ -n "${DATASET_SPLIT:-}" ]; then
+    CMD+=(--split "${DATASET_SPLIT}")
+fi
+
 if [ "${USE_WANDB:-0}" = "1" ]; then
     CMD+=(--use_wandb)
     if [ -n "${WANDB_PROJECT:-}" ]; then
@@ -78,13 +83,14 @@ if [ "${USE_WANDB:-0}" = "1" ]; then
 fi
 
 CUDA_VISIBLE_DEVICES="${GPUS}" CUDA_LAUNCH_BLOCKING=1 TORCH_USE_CUDA_DSA=1 \
-    nohup "${CMD[@]}" > "${LOG_PATH}/[${MODEL_NAME}]_${TIME_STAMP}.log" 2>&1 &
+    nohup "${CMD[@]}" > "$LOG_FILE" 2>&1 &
     # --spsize 4 --sp_mode "ring"
 
 
 printf "%-20s: [%s]\n" "Model" "${MODEL_NAME}"
 printf "%-20s: [%s]\n" "Dataset" "${DATASET_PATH}"
+printf "%-20s: [%s]\n" "Dataset Split" "${DATASET_SPLIT:-}"
 printf "%-20s: [%s]\n" "Savecheckpoint Dir" "${SAVE_DIR}"
-printf "%-20s: [%s]\n" "Log" "${LOG_PATH}"
+printf "%-20s: [%s]\n" "Log" "${LOG_FILE}"
 printf "%-20s: [%s]\n" "Wandb" "${USE_WANDB:-0}"
 printf "%-20s: [%s]\n" "Log PID" $$:$!
