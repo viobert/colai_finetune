@@ -33,7 +33,7 @@ SAVE_ROOT_DIR="${SAVE_DIR_BASE}"
 require_vars \
     MODEL_PATH DATASET_PATH SAVE_DIR_BASE LOG_PATH_DIR \
     GPUS BATCH_SIZE N_EPOCHS PLUGIN_NAME LR MICROBATCH_SIZE \
-    MAX_LENGTH TPSIZE PPSIZE
+    MAX_LENGTH TPSIZE PPSIZE TRAIN_MODE
 
 # ps aux | grep colai | grep -v grep | awk '{print $2}' | xargs kill -9 > /dev/null 2>&1
 
@@ -50,9 +50,22 @@ LOG_FILE="${LOG_PATH}/[${MODEL_NAME}]_${TIME_STAMP}.log"
 # export NCCL_DEBUG="TRACE"
 # export NCCL_DEBUG_SUBSYS="INIT,GRAPH,ENV"
 export NCCL_P2P_LEVEL=NVL
+case "${TRAIN_MODE}" in
+    full)
+        TRAIN_SCRIPT="./training/col_train.py"
+        ;;
+    lora)
+        TRAIN_SCRIPT="./training/col_train_lora.py"
+        ;;
+    *)
+        echo "Unsupported TRAIN_MODE: ${TRAIN_MODE}. Use full or lora." >&2
+        exit 1
+        ;;
+esac
+
 CMD=(
     colossalai run --nproc_per_node "${NGPUS}" --master_port 2955${GPUS:0:1}
-    ./training/col_train.py --plugin "${PLUGIN_NAME}"
+    "${TRAIN_SCRIPT}" --plugin "${PLUGIN_NAME}"
     --num_epochs "${N_EPOCHS}"
     --model_path "${MODEL_PATH}" --dataset "${DATASET_PATH}"
     --save_dir "${SAVE_DIR}"
@@ -69,6 +82,10 @@ if [ -n "${DATASET_SPLIT:-}" ]; then
     CMD+=(--split "${DATASET_SPLIT}")
 fi
 
+if [ -n "${LOAD_CHECKPOINT:-}" ]; then
+    CMD+=(--load "${LOAD_CHECKPOINT}")
+fi
+
 if [ "${USE_WANDB:-0}" = "1" ]; then
     CMD+=(--use_wandb)
     if [ -n "${WANDB_PROJECT:-}" ]; then
@@ -82,11 +99,22 @@ if [ "${USE_WANDB:-0}" = "1" ]; then
     fi
 fi
 
+if [ "${TRAIN_MODE}" = "lora" ]; then
+    CMD+=(
+        --lora_rank "${LORA_RANK}"
+        --lora_alpha "${LORA_ALPHA}"
+        --lora_dropout "${LORA_DROPOUT}"
+        --lora_bias "${LORA_BIAS}"
+        --lora_target_modules "${LORA_TARGET_MODULES}"
+    )
+fi
+
 CUDA_VISIBLE_DEVICES="${GPUS}" CUDA_LAUNCH_BLOCKING=1 TORCH_USE_CUDA_DSA=1 \
     nohup "${CMD[@]}" > "$LOG_FILE" 2>&1 &
     # --spsize 4 --sp_mode "ring"
 
 
+printf "%-20s: [%s]\n" "Train Mode" "${TRAIN_MODE}"
 printf "%-20s: [%s]\n" "Model" "${MODEL_NAME}"
 printf "%-20s: [%s]\n" "Dataset" "${DATASET_PATH}"
 printf "%-20s: [%s]\n" "Dataset Split" "${DATASET_SPLIT:-}"

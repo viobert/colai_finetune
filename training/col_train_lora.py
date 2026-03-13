@@ -10,12 +10,8 @@ from datasets import concatenate_datasets, load_from_disk
 import torch
 import torch.nn as nn
 
-from transformers import AutoTokenizer
-from transformers.models.gemma2.configuration_gemma2 import Gemma2Config
-from transformers.models.llama.modeling_llama import LlamaForCausalLM
-from transformers.models.gemma2.modeling_gemma2 import Gemma2ForCausalLM
-from transformers.models.llama.configuration_llama import LlamaConfig
-from transformers.models.llama.tokenization_llama import LlamaTokenizer
+from peft import LoraConfig, TaskType, get_peft_model
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 import colossalai
 from colossalai.booster import Booster
@@ -24,17 +20,17 @@ from colossalai.cluster import DistCoordinator
 from colossalai.nn.lr_scheduler import CosineAnnealingWarmupLR
 from colossalai.nn.optimizer import HybridAdam
 
-from col_data_utils import prepare_dataloader
-from col_lora import convert_to_lora_module
+from col_data_utils import prepare_dataloader, save_json
 from colToolkit import Toolkit, Trainer, WandbConfig
 from utils.train_utils import format_numel_str, get_model_numel, get_parallel_ranks
 
+
 def tokenize_batch_for_finetune(
-    batch, tokenizer: Optional[LlamaTokenizer] = None,
+    batch, tokenizer=None,
     max_length: int = 2048, ring_attn: bool = False
 ):
     data = tokenizer(
-        [sample['input'] for sample in batch],
+        [sample["input"] for sample in batch],
         return_tensors="pt",
         padding="max_length",
         truncation=True,
@@ -44,22 +40,103 @@ def tokenize_batch_for_finetune(
         data["attention_mask"] = torch.ones_like(data["attention_mask"])
 
     data["labels"] = data["input_ids"].clone()
-    # if ring_attn:
-    #     data["labels"] = torch.where(
-    #         data["attention_mask"] > prompt["attention_mask"],
-    #         data["input_ids"], -100)
-    #     data["attention_mask"] = torch.ones_like(data["attention_mask"])
-    # else:
-    #     data["labels"] = data["input_ids"].clone()
     data = {k: v.cuda() for k, v in data.items()}
     return data
 
+
+def get_torch_dtype(mixed_precision: str):
+    if mixed_precision == "bf16":
+        return torch.bfloat16
+    if mixed_precision == "fp16":
+        return torch.float16
+    return None
+
+
+def parse_target_modules(model: nn.Module, modules_arg: Optional[str]) -> list[str]:
+    if modules_arg:
+        return [module_name.strip() for module_name in modules_arg.split(",") if module_name.strip()]
+
+    candidate_suffixes = (
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+    )
+    target_modules = []
+    for module_name, module in model.named_modules():
+        if isinstance(module, nn.Linear) and module_name.endswith(candidate_suffixes):
+            target_modules.append(module_name.split(".")[-1])
+
+    return sorted(set(target_modules))
+
+
+def unwrap_model(model, booster: Optional[Booster] = None):
+    if booster is not None and hasattr(booster, "unwrap_model"):
+        try:
+            return booster.unwrap_model(model)
+        except Exception:
+            pass
+
+    unwrapped = model
+    visited = set()
+    while hasattr(unwrapped, "module") and id(unwrapped) not in visited:
+        visited.add(id(unwrapped))
+        unwrapped = unwrapped.module
+    return unwrapped
+
+
+def get_lora_state_dict(model, booster: Optional[Booster] = None):
+    unwrapped_model = unwrap_model(model, booster=booster)
+    state_dict = unwrapped_model.state_dict()
+    return {name: tensor.detach().cpu() for name, tensor in state_dict.items() if "lora_" in name}
+
+
+def save_lora_checkpoint(
+    model,
+    booster: Booster,
+    save_dir: str,
+    epoch: int,
+    step: int,
+    coordinator: DistCoordinator,
+):
+    if not coordinator.is_master():
+        return
+
+    save_path = os.path.join(save_dir, f"epoch{epoch}-step{step}")
+    adapter_dir = os.path.join(save_path, "adapter")
+    os.makedirs(adapter_dir, exist_ok=True)
+
+    lora_state_dict = get_lora_state_dict(model, booster=booster)
+    torch.save(lora_state_dict, os.path.join(adapter_dir, "adapter_model.bin"))
+
+    unwrapped_model = unwrap_model(model, booster=booster)
+    peft_config = getattr(unwrapped_model, "peft_config", None)
+    if peft_config is not None:
+        config_to_save = {}
+        for adapter_name, config in peft_config.items():
+            config_to_save[adapter_name] = config.to_dict()
+        save_json(config_to_save, os.path.join(adapter_dir, "adapter_config.json"))
+
+
+class LoRATrainer(Trainer):
+    def save(self, epoch: int, step: int, batch_size: int):
+        super().save(epoch, step, batch_size)
+        save_lora_checkpoint(
+            model=self.model,
+            booster=self.booster,
+            save_dir=self.save_dir,
+            epoch=epoch,
+            step=step,
+            coordinator=self.coordinator,
+        )
+
+
 def main():
-    # ==============================
-    # Parse Arguments
-    # ==============================
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path", type=str, help="pretrained checkpoint path, used with mode==finetune")
+    parser.add_argument("--model_path", type=str, help="pretrained checkpoint path")
     parser.add_argument(
         "-p",
         "--plugin",
@@ -83,7 +160,7 @@ def main():
     parser.add_argument("-l", "--max_length", type=int, default=4096, help="Max sequence length")
     parser.add_argument("-x", "--mixed_precision", default="bf16", choices=["fp16", "bf16"], help="Mixed precision")
     parser.add_argument("-i", "--save_interval", type=int, default=None, help="Save interval in steps; default saves at each epoch end")
-    parser.add_argument("-o", "--save_dir", type=str, default="checkpoint", help="Checkpoint directory")
+    parser.add_argument("-o", "--save_dir", type=str, default="checkpoint_lora", help="Checkpoint directory")
     parser.add_argument("-f", "--load", type=str, default=None, help="Load checkpoint")
     parser.add_argument("--grad_clip", type=float, default=1.0, help="Gradient clipping")
     parser.add_argument("-a", "--flash_attention", action="store_true", help="Use Flash Attention")
@@ -91,7 +168,6 @@ def main():
     parser.add_argument("--tpsize", default=4, type=int)
     parser.add_argument("--spsize", type=int, default=1, help="Sequence parallel size")
     parser.add_argument("--microbatch_size", default=2, type=int)
-    parser.add_argument("--lora", default=0, type=int)
     parser.add_argument("--grad_accum", default=1, type=int)
     parser.add_argument("-seed", "--shuffle_seed", type=int, default=42, help="Shuffle seed")
     parser.add_argument("--use_wandb", action="store_true", help="Log training metrics to Weights & Biases")
@@ -104,21 +180,26 @@ def main():
         choices=["all_to_all", "ring_attn", "ring", "split_gather"],
         help="Sequence parallelism mode",
     )
-    parser.add_argument("--gemma", action="store_true", help="Use gemma model architecture")
+    parser.add_argument("--lora_rank", "--lora", dest="lora_rank", default=8, type=int)
+    parser.add_argument("--lora_alpha", default=16, type=int)
+    parser.add_argument("--lora_dropout", default=0.0, type=float)
+    parser.add_argument("--lora_bias", default="none", choices=["none", "all", "lora_only"])
+    parser.add_argument(
+        "--lora_target_modules",
+        type=str,
+        default="",
+        help="Comma separated module suffixes. Empty uses a default projection-module list.",
+    )
     args = parser.parse_args()
 
     if args.num_epochs <= 0:
         raise ValueError("num_epochs must be greater than 0.")
+    if args.lora_rank <= 0:
+        raise ValueError("lora_rank must be greater than 0.")
 
-    # ==============================
-    # Initialize Distributed Training
-    # ==============================
     colossalai.launch_from_torch({})
     coordinator = DistCoordinator()
 
-    # ==============================
-    # Initialize Booster
-    # ==============================
     args.pptp_size = None
     if args.plugin == "zero2":
         plugin = LowLevelZeroPlugin(
@@ -129,8 +210,6 @@ def main():
             stage=2, precision=args.mixed_precision, initial_scale=2**16, cpu_offload=True, max_norm=args.grad_clip
         )
     elif args.plugin == "hybrid_parallel":
-        # modify the param accordingly, default configuration is for llama2-7b
-        # args.ppsize, args.tpsize = 2, 4
         args.pptp_size = args.ppsize * args.tpsize
         if args.sp_mode == "ring_attn":
             args.pptp_size *= args.spsize
@@ -147,7 +226,7 @@ def main():
             zero_stage=0,
             precision=args.mixed_precision,
             initial_scale=1,
-            enable_metadata_cache=False
+            enable_metadata_cache=False,
         )
     else:
         raise ValueError(f"Unknown plugin {args.plugin}")
@@ -160,29 +239,36 @@ def main():
     else:
         print_flag = coordinator.is_master()
     should_log_wandb = print_flag
+    if args.plugin == "hybrid_parallel":
+        coordinator.print_on_master(
+            "Warning: hybrid_parallel LoRA training can resume from full training checkpoints, "
+            "but exported adapter weights may be incomplete under tensor/pipeline sharding."
+        )
 
-    # ==============================
-    # Initialize Model, Optimizer and LR Scheduler
-    # ==============================
-    config_class = LlamaConfig if not args.gemma else Gemma2Config
-    model_class = LlamaForCausalLM if not args.gemma else Gemma2ForCausalLM
-
-    config = config_class.from_pretrained(
+    torch_dtype = get_torch_dtype(args.mixed_precision)
+    model = AutoModelForCausalLM.from_pretrained(
         args.model_path,
-        torch_dtype=torch.bfloat16 if args.mixed_precision == 'bf16' else
-                torch.float16 if args.mixed_precision == 'fp16' else None,
-        attn_implementation="flash_attention_2" if args.flash_attention else "eager"
+        torch_dtype=torch_dtype,
+        attn_implementation="flash_attention_2" if args.flash_attention else "eager",
     )
 
-    model = model_class(config)
-    if args.lora != 0:
-        model = convert_to_lora_module(model, args.lora)
+    target_modules = parse_target_modules(model, args.lora_target_modules)
+    if not target_modules:
+        raise ValueError(
+            "No LoRA target modules were found. Set --lora_target_modules explicitly."
+        )
 
-    # ==============================
-    # Initialize Tokenizer, Dataset and Dataloader
-    # ==============================
+    lora_config = LoraConfig(
+        r=args.lora_rank,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
+        bias=args.lora_bias,
+        task_type=TaskType.CAUSAL_LM,
+        target_modules=target_modules,
+    )
+    model = get_peft_model(model, lora_config)
+
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, padding_side="right")
-    # follows fast chat: https://github.com/lm-sys/FastChat/blob/main/fastchat/train/train.py#L257
     tokenizer.pad_token = tokenizer.eos_token
 
     dataset = load_from_disk(args.dataset)
@@ -192,19 +278,22 @@ def main():
             if args.split not in dataset:
                 raise ValueError(
                     f"Requested split '{args.split}' was not found in dataset {args.dataset}. "
-                    f"Available splits: {split_names}")
+                    f"Available splits: {split_names}"
+                )
             coordinator.print_on_master(
-                f"Warning: dataset at {args.dataset} is a DatasetDict. Using split '{args.split}' only.")
+                f"Warning: dataset at {args.dataset} is a DatasetDict. Using split '{args.split}' only."
+            )
             train_ds = dataset[args.split]
         else:
             coordinator.print_on_master(
                 f"Warning: dataset at {args.dataset} is a DatasetDict and no split was provided. "
-                f"Concatenating all splits: {split_names}.")
+                f"Concatenating all splits: {split_names}."
+            )
             train_ds = concatenate_datasets([dataset[split_name] for split_name in split_names])
     else:
-        coordinator.print_on_master(
-                f"Warning: dataset at {args.dataset} is a single Dataset. Using it directly.")
+        coordinator.print_on_master(f"Warning: dataset at {args.dataset} is a single Dataset. Using it directly.")
         train_ds = dataset
+
     train_ds = train_ds.shuffle(seed=args.shuffle_seed)
     dataloader = prepare_dataloader(
         train_ds,
@@ -213,8 +302,10 @@ def main():
         drop_last=True,
         pptp_size=args.pptp_size,
         collate_fn=partial(
-            tokenize_batch_for_finetune, tokenizer=tokenizer,
-            max_length=args.max_length, ring_attn=('ring' in args.sp_mode)
+            tokenize_batch_for_finetune,
+            tokenizer=tokenizer,
+            max_length=args.max_length,
+            ring_attn=("ring" in args.sp_mode),
         ),
     )
 
@@ -222,34 +313,34 @@ def main():
         model.gradient_checkpointing_enable()
 
     if len(dataloader) == 0:
-        raise ValueError(
-            "The dataloader is empty. Check dataset size, batch_size, and drop_last settings."
-        )
+        raise ValueError("The dataloader is empty. Check dataset size, batch_size, and drop_last settings.")
 
-    model_numel = get_model_numel(model, True)
-    coordinator.print_on_master(f"Model params: {format_numel_str(model_numel)}")
+    coordinator.print_on_master(f"LoRA target modules: {target_modules}")
+    coordinator.print_on_master(f"Model params: {format_numel_str(get_model_numel(model))}")
+    coordinator.print_on_master(f"Train params: {format_numel_str(get_model_numel(model, True))}")
 
-    optimizer = HybridAdam(filter(lambda x: x.requires_grad, model.parameters()), 
-                           lr=args.lr, betas=(0.9, 0.95), weight_decay=args.weigth_decay)
+    optimizer = HybridAdam(
+        filter(lambda x: x.requires_grad, model.parameters()),
+        lr=args.lr,
+        betas=(0.9, 0.95),
+        weight_decay=args.weigth_decay,
+    )
     total_step = args.num_epochs * len(dataloader) // args.grad_accum
     lr_scheduler = CosineAnnealingWarmupLR(
         optimizer, total_steps=total_step, warmup_steps=math.ceil(total_step * 0.03), eta_min=0.1 * args.lr
     )
+
     default_dtype = torch.float16 if args.mixed_precision == "fp16" else torch.bfloat16
     torch.set_default_dtype(default_dtype)
     model, optimizer, _, dataloader, lr_scheduler = booster.boost(
         model, optimizer, dataloader=dataloader, lr_scheduler=lr_scheduler
     )
-    
-    coordinator.print_on_master(f"Train params: {format_numel_str(get_model_numel(model, True))}")
-    
     torch.set_default_dtype(torch.float)
 
-    booster.load_model(model, args.model_path)
-
-    coordinator.print_on_master(f"Booster init max CUDA memory: {torch.cuda.max_memory_allocated()/1024**2:.2f} MB")
+    coordinator.print_on_master(f"Boosted train params: {format_numel_str(get_model_numel(model, True))}")
+    coordinator.print_on_master(f"Booster init max CUDA memory: {torch.cuda.max_memory_allocated() / 1024**2:.2f} MB")
     coordinator.print_on_master(
-        f"Booster init max CPU memory: {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024:.2f} MB"
+        f"Booster init max CPU memory: {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024:.2f} MB"
     )
 
     dataset_name = os.path.basename(os.path.normpath(args.dataset))
@@ -259,17 +350,21 @@ def main():
         enabled=args.use_wandb,
         project=args.wandb_project,
         entity=args.wandb_entity,
-        run_name=args.wandb_run_name if args.wandb_run_name else model_name,
+        run_name=args.wandb_run_name if args.wandb_run_name else f"{model_name}-lora",
         config={
             "dataset": dataset_name,
             "batch_size": args.batch_size,
             "micro_batch_size": args.microbatch_size,
             "num_epochs": args.num_epochs,
             "learning_rate": args.lr,
+            "lora_rank": args.lora_rank,
+            "lora_alpha": args.lora_alpha,
+            "lora_dropout": args.lora_dropout,
+            "lora_target_modules": ",".join(target_modules),
         },
     )
 
-    trainer = Trainer(
+    trainer = LoRATrainer(
         booster=booster,
         coordinator=coordinator,
         model=model,
