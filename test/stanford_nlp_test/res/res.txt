@@ -1,0 +1,68 @@
+before finetuning:
+
+        python test/stanford_nlp_test/evaluate/eval_sft_classifier.py \
+        >     --model_path /home/skl/mkx/model/Qwen2.5-7B-Instruct \
+        >     --split validation
+        Loading checkpoint shards: 100%|████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:06<00:00,  1.52s/it]
+        /home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:590: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.0` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+        warnings.warn(
+        /home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:595: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.8` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+        warnings.warn(
+        /home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:612: UserWarning: `do_sample` is set to `False`. However, `top_k` is set to `20` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_k`.
+        warnings.warn(
+        Split: validation
+        Samples: 872
+        Accuracy: 0.6319
+        Unknown predictions: 152
+        negative: precision=0.6564, recall=0.7453, f1=0.6980, support=428
+        positive: precision=0.9915, recall=0.5225, f1=0.6844, support=444
+
+        Examples:
+        [0] gold=positive, pred=positive
+        it 's a charming and often affecting journey .
+        ------------------------------------------------------------
+        [1] gold=negative, pred=negative
+        unflinchingly bleak and desperate
+        ------------------------------------------------------------
+        [2] gold=positive, pred=positive
+        allows us to hope that nolan is poised to embark a major career as a commercial yet inventive filmmaker .
+        ------------------------------------------------------------
+        [3] gold=positive, pred=positive
+        the acting , costumes , music , cinematography and sound are all astounding given the production 's austere locales .
+        ------------------------------------------------------------
+        [4] gold=negative, pred=unknown
+        it 's slow -- very , very slow .
+        ------------------------------------------------------------
+
+
+after finetuning the model
+
+        python test/stanford_nlp_test/evaluate/eval_sft_classifier.py \
+        >   --model_path /mnt/sdb1/mkx/save_checkpoint/Qwen2.5-7B-Instruct/2026-03-12/155633/epoch4-step218/model \
+        >   --tokenizer_path /home/skl/mkx/model/Qwen2.5-7B-Instruct \
+        >   --split validation
+        Loading checkpoint shards: 100%|██████████████████████████████████████████████████████████████| 16/16 [00:04<00:00,  3.78it/s]
+        Evaluating validation: 100%|█████████████████████████████████████████████████████████████| 109/109 [00:17<00:00,  6.37batch/s]
+        Split: validation
+        Samples: 872
+        Accuracy: 0.5482
+        Unknown predictions: 0
+        negative: precision=0.5574, recall=0.3855, f1=0.4558, support=428
+        positive: precision=0.5434, recall=0.7050, f1=0.6137, support=444
+
+        Examples:
+        [0] gold=positive, pred=positive
+        it 's a charming and often affecting journey .
+        ------------------------------------------------------------
+        [1] gold=negative, pred=negative
+        unflinchingly bleak and desperate
+        ------------------------------------------------------------
+        [2] gold=positive, pred=positive
+        allows us to hope that nolan is poised to embark a major career as a commercial yet inventive filmmaker .
+        ------------------------------------------------------------
+        [3] gold=positive, pred=positive
+        the acting , costumes , music , cinematography and sound are all astounding given the production 's austere locales .
+        ------------------------------------------------------------
+        [4] gold=negative, pred=positive
+        it 's slow -- very , very slow .
+        ------------------------------------------------------------

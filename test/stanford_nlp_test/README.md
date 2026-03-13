@@ -45,7 +45,12 @@ look at the output to verify the original model accuracy.
 After training, run:
 
 ```bash
+# --model_path path/to/your/save_checkpoint/model \
+# --tokenizer_path path/to/your/save_checkpoint/tokenizer \
+# --split your_dataset_split
+
 python test/stanford_nlp_test/evaluate/eval_sft_classifier.py \
-  --model_path /path/to/your/save_checkpoint/model \
+  --model_path /mnt/sdb1/mkx/save_checkpoint/Qwen2.5-7B-Instruct/2026-03-12/155633/epoch4-step218/model \
+  --tokenizer_path /home/skl/mkx/model/Qwen2.5-7B-Instruct \
   --split validation
 ```

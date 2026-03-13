@@ -56,6 +56,7 @@ def evaluate_batch(model, tokenizer, prompts: List[str], device: torch.device) -
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate a causal LM on an instruction-style binary classification dataset.")
     parser.add_argument("--model_path", type=str, required=True, help="Path to the trained model.")
+    parser.add_argument("--tokenizer_path", type=str, default=None, help="Path to the model tokenizer.")
     parser.add_argument(
         "--dataset_path",
         type=str,
@@ -85,7 +86,9 @@ def main() -> None:
             )
             dataset = dataset.select(labeled_indices)
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model_path, padding_side="left")
+    if args.tokenizer_path is None:
+        args.tokenizer_path = args.model_path
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path, padding_side="left")
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
