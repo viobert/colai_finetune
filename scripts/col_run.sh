@@ -94,6 +94,9 @@ if [ "${USE_WANDB:-0}" = "1" ]; then
     if [ -n "${WANDB_ENTITY:-}" ]; then
         CMD+=(--wandb_entity "${WANDB_ENTITY}")
     fi
+    if [ -n "${WANDB_GROUP:-}" ]; then
+        CMD+=(--wandb_group "${WANDB_GROUP}")
+    fi
     if [ -n "${WANDB_RUN_NAME:-}" ]; then
         CMD+=(--wandb_run_name "${WANDB_RUN_NAME}")
     fi

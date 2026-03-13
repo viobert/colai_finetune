@@ -173,6 +173,7 @@ def main():
     parser.add_argument("--use_wandb", action="store_true", help="Log training metrics to Weights & Biases")
     parser.add_argument("--wandb_project", type=str, default=None, help="Weights & Biases project name")
     parser.add_argument("--wandb_entity", type=str, default=None, help="Weights & Biases entity")
+    parser.add_argument("--wandb_group", type=str, default=None, help="Weights & Biases group name")
     parser.add_argument("--wandb_run_name", type=str, default=None, help="Weights & Biases run name")
     parser.add_argument(
         "--sp_mode",
@@ -350,6 +351,7 @@ def main():
         enabled=args.use_wandb,
         project=args.wandb_project,
         entity=args.wandb_entity,
+        group=args.wandb_group,
         run_name=args.wandb_run_name if args.wandb_run_name else f"{model_name}-lora",
         config={
             "dataset": dataset_name,

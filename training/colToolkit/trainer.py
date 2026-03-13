@@ -43,6 +43,7 @@ class WandbConfig:
     enabled: bool = False
     project: Optional[str] = None
     entity: Optional[str] = None
+    group: Optional[str] = None
     run_name: Optional[str] = None
     config: Optional[dict] = None
 
@@ -76,6 +77,7 @@ class Trainer:
                 wandb.init(
                     project=self.wandb_config.project,
                     entity=self.wandb_config.entity,
+                    group=self.wandb_config.group,
                     name=self.wandb_config.run_name,
                     dir=self.save_dir,
                     config=self.wandb_config.config,
