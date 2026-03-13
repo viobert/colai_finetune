@@ -3,7 +3,7 @@ import math
 import os
 import resource
 from functools import partial
-from typing import Optional
+from typing import Optional, Union
 
 from datasets import concatenate_datasets, load_from_disk
 
@@ -52,8 +52,11 @@ def get_torch_dtype(mixed_precision: str):
     return None
 
 
-def parse_target_modules(model: nn.Module, modules_arg: Optional[str]) -> list[str]:
+def parse_target_modules(model: nn.Module, modules_arg: Optional[str]) -> Union[str, list[str]]:
     if modules_arg:
+        modules_arg = modules_arg.strip()
+        if modules_arg == "all-linear":
+            return modules_arg
         return [module_name.strip() for module_name in modules_arg.split(",") if module_name.strip()]
 
     candidate_suffixes = (
@@ -362,7 +365,7 @@ def main():
             "lora_rank": args.lora_rank,
             "lora_alpha": args.lora_alpha,
             "lora_dropout": args.lora_dropout,
-            "lora_target_modules": ",".join(target_modules),
+            "lora_target_modules": target_modules if isinstance(target_modules, str) else ",".join(target_modules),
         },
     )
 
