@@ -118,9 +118,16 @@ CUDA_VISIBLE_DEVICES="${GPUS}" CUDA_LAUNCH_BLOCKING=1 TORCH_USE_CUDA_DSA=1 \
 
 
 printf "%-20s: [%s]\n" "Train Mode" "${TRAIN_MODE}"
+printf "%-20s: [%s]\n" "Train Script" "${TRAIN_SCRIPT}"
+printf "%-20s: [%s]\n" "Plugin" "${PLUGIN_NAME}"
 printf "%-20s: [%s]\n" "Model" "${MODEL_NAME}"
 printf "%-20s: [%s]\n" "Dataset" "${DATASET_PATH}"
 printf "%-20s: [%s]\n" "Dataset Split" "${DATASET_SPLIT:-}"
+if [ "${TRAIN_MODE}" = "lora" ]; then
+    printf "%-20s: [%s]\n" "LoRA Rank" "${LORA_RANK}"
+    printf "%-20s: [%s]\n" "LoRA Alpha" "${LORA_ALPHA}"
+    printf "%-20s: [%s]\n" "LoRA Targets" "${LORA_TARGET_MODULES}"
+fi
 printf "%-20s: [%s]\n" "Savecheckpoint Dir" "${SAVE_DIR}"
 printf "%-20s: [%s]\n" "Log" "${LOG_FILE}"
 printf "%-20s: [%s]\n" "Wandb" "${USE_WANDB:-0}"

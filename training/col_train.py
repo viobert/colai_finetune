@@ -25,7 +25,6 @@ from colossalai.nn.lr_scheduler import CosineAnnealingWarmupLR
 from colossalai.nn.optimizer import HybridAdam
 
 from col_data_utils import prepare_dataloader
-from col_lora import convert_to_lora_module
 from colToolkit import Toolkit, Trainer, WandbConfig
 from utils.train_utils import (
     ensure_hybrid_parallel_compatibility,
@@ -97,7 +96,6 @@ def main():
     parser.add_argument("--tpsize", default=4, type=int)
     parser.add_argument("--spsize", type=int, default=1, help="Sequence parallel size")
     parser.add_argument("--microbatch_size", default=2, type=int)
-    parser.add_argument("--lora", default=0, type=int)
     parser.add_argument("--grad_accum", default=1, type=int)
     parser.add_argument("-seed", "--shuffle_seed", type=int, default=42, help="Shuffle seed")
     parser.add_argument("--use_wandb", action="store_true", help="Log training metrics to Weights & Biases")
@@ -183,8 +181,6 @@ def main():
     )
 
     model = model_class(config)
-    if args.lora != 0:
-        model = convert_to_lora_module(model, args.lora)
     if args.plugin == "hybrid_parallel":
         model = ensure_hybrid_parallel_compatibility(model)
 
