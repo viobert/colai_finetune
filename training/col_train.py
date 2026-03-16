@@ -27,7 +27,13 @@ from colossalai.nn.optimizer import HybridAdam
 from col_data_utils import prepare_dataloader
 from col_lora import convert_to_lora_module
 from colToolkit import Toolkit, Trainer, WandbConfig
-from utils.train_utils import format_numel_str, get_model_numel, get_parallel_ranks
+from utils.train_utils import (
+    ensure_hybrid_parallel_compatibility,
+    format_numel_str,
+    get_model_numel,
+    get_parallel_ranks,
+    patch_qwen2_rotary_embedding_forward,
+)
 
 def tokenize_batch_for_finetune(
     batch, tokenizer: Optional[LlamaTokenizer] = None,
@@ -130,6 +136,7 @@ def main():
             stage=2, precision=args.mixed_precision, initial_scale=2**16, cpu_offload=True, max_norm=args.grad_clip
         )
     elif args.plugin == "hybrid_parallel":
+        patch_qwen2_rotary_embedding_forward()
         # modify the param accordingly, default configuration is for llama2-7b
         # args.ppsize, args.tpsize = 2, 4
         args.pptp_size = args.ppsize * args.tpsize
@@ -178,6 +185,8 @@ def main():
     model = model_class(config)
     if args.lora != 0:
         model = convert_to_lora_module(model, args.lora)
+    if args.plugin == "hybrid_parallel":
+        model = ensure_hybrid_parallel_compatibility(model)
 
     # ==============================
     # Initialize Tokenizer, Dataset and Dataloader

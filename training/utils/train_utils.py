@@ -1,3 +1,6 @@
+import inspect
+
+import torch
 import torch.nn as nn
 import torch.distributed as dist
 
@@ -43,3 +46,66 @@ def get_parallel_ranks(booster: Booster):
             dp_rank = dist.get_rank(group=plugin.dp_group)
 
     return tp_rank, dp_rank, is_last_stage, use_pipeline
+
+
+def ensure_hybrid_parallel_compatibility(model: nn.Module) -> nn.Module:
+    candidate_models = [model]
+    for attr_path in ("model", "base_model", "base_model.model", "model.model"):
+        current = model
+        valid = True
+        for attr_name in attr_path.split("."):
+            current = getattr(current, attr_name, None)
+            if current is None:
+                valid = False
+                break
+        if valid:
+            candidate_models.append(current)
+
+    unique_candidates = []
+    seen = set()
+    for candidate_model in candidate_models:
+        if id(candidate_model) in seen:
+            continue
+        seen.add(id(candidate_model))
+        unique_candidates.append(candidate_model)
+
+    for attr_name in ("embed_tokens", "layers", "norm"):
+        source_attr = None
+        for candidate_model in unique_candidates:
+            if hasattr(candidate_model, attr_name):
+                source_attr = getattr(candidate_model, attr_name)
+                break
+        if source_attr is None:
+            continue
+
+        for candidate_model in unique_candidates:
+            if not hasattr(candidate_model, attr_name):
+                setattr(candidate_model, attr_name, source_attr)
+
+    return model
+
+
+def patch_qwen2_rotary_embedding_forward() -> None:
+    try:
+        from transformers.models.qwen2.modeling_qwen2 import Qwen2RotaryEmbedding
+    except ImportError:
+        return
+
+    if getattr(Qwen2RotaryEmbedding.forward, "_colai_ft_seq_len_compat", False):
+        return
+
+    signature = inspect.signature(Qwen2RotaryEmbedding.forward)
+    if "seq_len" in signature.parameters:
+        return
+
+    original_forward = Qwen2RotaryEmbedding.forward
+
+    def forward_with_seq_len_compat(self, x, position_ids=None, seq_len=None, *args, **kwargs):
+        if position_ids is None and seq_len is not None:
+            batch_size = x.shape[0]
+            actual_seq_len = x.shape[-2]
+            position_ids = torch.arange(actual_seq_len, device=x.device).unsqueeze(0).expand(batch_size, -1)
+        return original_forward(self, x, position_ids=position_ids, *args, **kwargs)
+
+    forward_with_seq_len_compat._colai_ft_seq_len_compat = True
+    Qwen2RotaryEmbedding.forward = forward_with_seq_len_compat

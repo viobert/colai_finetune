@@ -40,16 +40,12 @@ require_vars \
 NGPUS=$(echo "${GPUS}" | awk -F ',' '{print NF}')
 DATE_STAMP=$(date +%Y-%m-%d)
 TIME_STAMP=$(date +%H%M%S)
-LOG_PATH="${LOG_ROOT_DIR}/${MODEL_NAME}/${DATE_STAMP}"
+LOG_PATH="${LOG_ROOT_DIR}/${DATE_STAMP}"
 SAVE_DIR="${SAVE_ROOT_DIR}/${MODEL_NAME}/${DATE_STAMP}/${TIME_STAMP}"
 mkdir -p "${LOG_PATH}"
 mkdir -p "${SAVE_DIR}"
-LOG_FILE="${LOG_PATH}/[${MODEL_NAME}]_${TIME_STAMP}.log"
+LOG_FILE="${LOG_PATH}/[${TRAIN_MODE}]_[${MODEL_NAME}]_${TIME_STAMP}.log"
 
-# # Llama
-# export NCCL_DEBUG="TRACE"
-# export NCCL_DEBUG_SUBSYS="INIT,GRAPH,ENV"
-export NCCL_P2P_LEVEL=NVL
 case "${TRAIN_MODE}" in
     full)
         TRAIN_SCRIPT="./training/col_train.py"
@@ -112,6 +108,10 @@ if [ "${TRAIN_MODE}" = "lora" ]; then
     )
 fi
 
+# # Llama
+# export NCCL_DEBUG="TRACE"
+# export NCCL_DEBUG_SUBSYS="INIT,GRAPH,ENV"
+export NCCL_P2P_LEVEL=NVL
 CUDA_VISIBLE_DEVICES="${GPUS}" CUDA_LAUNCH_BLOCKING=1 TORCH_USE_CUDA_DSA=1 \
     nohup "${CMD[@]}" > "$LOG_FILE" 2>&1 &
     # --spsize 4 --sp_mode "ring"
