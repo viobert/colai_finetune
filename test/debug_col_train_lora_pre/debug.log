@@ -1,0 +1,1260 @@
+W0316 08:32:19.400000 1088301 site-packages/torch/distributed/run.py:774] 
+W0316 08:32:19.400000 1088301 site-packages/torch/distributed/run.py:774] *****************************************
+W0316 08:32:19.400000 1088301 site-packages/torch/distributed/run.py:774] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0316 08:32:19.400000 1088301 site-packages/torch/distributed/run.py:774] *****************************************
+/home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/utils/safetensors.py:13: UserWarning: Please install the latest tensornvme to use async save. pip install git+https://github.com/hpcaitech/TensorNVMe.git
+  warnings.warn(
+/home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/utils/safetensors.py:13: UserWarning: Please install the latest tensornvme to use async save. pip install git+https://github.com/hpcaitech/TensorNVMe.git
+  warnings.warn(
+/home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/shardformer/layer/normalization.py:48: UserWarning: Please install apex from source (https://github.com/NVIDIA/apex) to use the fused RMSNorm kernel
+  warnings.warn("Please install apex from source (https://github.com/NVIDIA/apex) to use the fused RMSNorm kernel")
+/home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/shardformer/layer/normalization.py:93: UserWarning: Please install apex from source (https://github.com/NVIDIA/apex) to use the fused RMSNorm kernel
+  warnings.warn(
+/home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/shardformer/layer/normalization.py:48: UserWarning: Please install apex from source (https://github.com/NVIDIA/apex) to use the fused RMSNorm kernel
+  warnings.warn("Please install apex from source (https://github.com/NVIDIA/apex) to use the fused RMSNorm kernel")
+/home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/shardformer/layer/normalization.py:93: UserWarning: Please install apex from source (https://github.com/NVIDIA/apex) to use the fused RMSNorm kernel
+  warnings.warn(
+[03/16/26 08:32:26] INFO     colossalai - colossalai - INFO:                                                                                      
+                             /home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/initialize.py:75 launch                      
+                    INFO     colossalai - colossalai - INFO: Distributed environment is initialized, world size: 2                                
+/home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/shardformer/shard/shard_config.py:94: UserWarning: The sequence_parallelism_mode will be ignored when enable_sequence_parallelism is False
+  warnings.warn(
+booster::<colossalai.booster.booster.Booster object at 0x7fb2feda5f90>
+/home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/shardformer/shard/shard_config.py:94: UserWarning: The sequence_parallelism_mode will be ignored when enable_sequence_parallelism is False
+  warnings.warn(
+booster::<colossalai.booster.booster.Booster object at 0x7f1c901dca10>
+config:: Qwen2Config {
+  "_name_or_path": "/mnt/sdb1/mkx/model/Qwen2.5-7B-Instruct",
+  "architectures": [
+    "Qwen2ForCausalLM"
+  ],
+  "attention_dropout": 0.0,
+  "bos_token_id": 151643,
+  "eos_token_id": 151645,
+  "hidden_act": "silu",
+  "hidden_size": 3584,
+  "initializer_range": 0.02,
+  "intermediate_size": 18944,
+  "max_position_embeddings": 32768,
+  "max_window_layers": 28,
+  "model_type": "qwen2",
+  "num_attention_heads": 28,
+  "num_hidden_layers": 28,
+  "num_key_value_heads": 4,
+  "rms_norm_eps": 1e-06,
+  "rope_scaling": null,
+  "rope_theta": 1000000.0,
+  "sliding_window": null,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.46.3",
+  "use_cache": true,
+  "use_sliding_window": false,
+  "vocab_size": 152064
+}
+
+config:: Qwen2Config {
+  "_name_or_path": "/mnt/sdb1/mkx/model/Qwen2.5-7B-Instruct",
+  "architectures": [
+    "Qwen2ForCausalLM"
+  ],
+  "attention_dropout": 0.0,
+  "bos_token_id": 151643,
+  "eos_token_id": 151645,
+  "hidden_act": "silu",
+  "hidden_size": 3584,
+  "initializer_range": 0.02,
+  "intermediate_size": 18944,
+  "max_position_embeddings": 32768,
+  "max_window_layers": 28,
+  "model_type": "qwen2",
+  "num_attention_heads": 28,
+  "num_hidden_layers": 28,
+  "num_key_value_heads": 4,
+  "rms_norm_eps": 1e-06,
+  "rope_scaling": null,
+  "rope_theta": 1000000.0,
+  "sliding_window": null,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.46.3",
+  "use_cache": true,
+  "use_sliding_window": false,
+  "vocab_size": 152064
+}
+
+model_before lora booster:: Qwen2ForCausalLM(
+  (model): Qwen2Model(
+    (embed_tokens): Embedding(152064, 3584)
+    (layers): ModuleList(
+      (0-27): 28 x Qwen2DecoderLayer(
+        (self_attn): Qwen2Attention(
+          (q_proj): Linear(in_features=3584, out_features=3584, bias=True)
+          (k_proj): Linear(in_features=3584, out_features=512, bias=True)
+          (v_proj): Linear(in_features=3584, out_features=512, bias=True)
+          (o_proj): Linear(in_features=3584, out_features=3584, bias=False)
+          (rotary_emb): Qwen2RotaryEmbedding()
+        )
+        (mlp): Qwen2MLP(
+          (gate_proj): Linear(in_features=3584, out_features=18944, bias=False)
+          (up_proj): Linear(in_features=3584, out_features=18944, bias=False)
+          (down_proj): Linear(in_features=18944, out_features=3584, bias=False)
+          (act_fn): SiLU()
+        )
+        (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+        (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+      )
+    )
+    (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+    (rotary_emb): Qwen2RotaryEmbedding()
+  )
+  (lm_head): Linear(in_features=3584, out_features=152064, bias=False)
+)
+target_modules before:: 
+target_modules after:: ['down_proj', 'gate_proj', 'k_proj', 'o_proj', 'q_proj', 'up_proj', 'v_proj']
+lora_config: LoraConfig(peft_type=<PeftType.LORA: 'LORA'>, auto_mapping=None, base_model_name_or_path=None, revision=None, task_type=<TaskType.CAUSAL_LM: 'CAUSAL_LM'>, inference_mode=False, r=8, target_modules={'v_proj', 'gate_proj', 'up_proj', 'down_proj', 'q_proj', 'o_proj', 'k_proj'}, lora_alpha=16, lora_dropout=0.0, fan_in_fan_out=False, bias='none', use_rslora=False, modules_to_save=None, init_lora_weights=True, layers_to_transform=None, layers_pattern=None, rank_pattern={}, alpha_pattern={}, megatron_config=None, megatron_core='megatron.core', loftq_config={}, use_dora=False, layer_replication=None, runtime_config=LoraRuntimeConfig(ephemeral_gpu_offload=False))
+                    WARNING  colossalai - colossalai - WARNING:                                                                                   
+                             /home/skl/anaconda3/envs/colai4/lib/python3.11/site-packages/colossalai/booster/plugin/hybrid_parallel_plugin.py:1517
+                             enable_lora                                                                                                          
+model_before lora booster:: Qwen2ForCausalLM(
+  (model): Qwen2Model(
+    (embed_tokens): Embedding(152064, 3584)
+    (layers): ModuleList(
+      (0-27): 28 x Qwen2DecoderLayer(
+        (self_attn): Qwen2Attention(
+          (q_proj): Linear(in_features=3584, out_features=3584, bias=True)
+          (k_proj): Linear(in_features=3584, out_features=512, bias=True)
+          (v_proj): Linear(in_features=3584, out_features=512, bias=True)
+          (o_proj): Linear(in_features=3584, out_features=3584, bias=False)
+          (rotary_emb): Qwen2RotaryEmbedding()
+        )
+        (mlp): Qwen2MLP(
+          (gate_proj): Linear(in_features=3584, out_features=18944, bias=False)
+          (up_proj): Linear(in_features=3584, out_features=18944, bias=False)
+          (down_proj): Linear(in_features=18944, out_features=3584, bias=False)
+          (act_fn): SiLU()
+        )
+        (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+        (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+      )
+    )
+    (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+    (rotary_emb): Qwen2RotaryEmbedding()
+  )
+  (lm_head): Linear(in_features=3584, out_features=152064, bias=False)
+)
+                    WARNING  colossalai - colossalai - WARNING: You have enabled LoRa training. Please check the hyperparameters such as lr       
+target_modules before:: 
+target_modules after:: ['down_proj', 'gate_proj', 'k_proj', 'o_proj', 'q_proj', 'up_proj', 'v_proj']
+lora_config: LoraConfig(peft_type=<PeftType.LORA: 'LORA'>, auto_mapping=None, base_model_name_or_path=None, revision=None, task_type=<TaskType.CAUSAL_LM: 'CAUSAL_LM'>, inference_mode=False, r=8, target_modules={'q_proj', 'up_proj', 'o_proj', 'v_proj', 'gate_proj', 'down_proj', 'k_proj'}, lora_alpha=16, lora_dropout=0.0, fan_in_fan_out=False, bias='none', use_rslora=False, modules_to_save=None, init_lora_weights=True, layers_to_transform=None, layers_pattern=None, rank_pattern={}, alpha_pattern={}, megatron_config=None, megatron_core='megatron.core', loftq_config={}, use_dora=False, layer_replication=None, runtime_config=LoraRuntimeConfig(ephemeral_gpu_offload=False))
+model_after lora booster:: PeftModelForCausalLM(
+  (base_model): LoraModel(
+    (model): Qwen2ForCausalLM(
+      (model): Qwen2Model(
+        (embed_tokens): Embedding(152064, 3584)
+        (layers): ModuleList(
+          (0-27): 28 x Qwen2DecoderLayer(
+            (self_attn): Qwen2Attention(
+              (q_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=3584, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (k_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=512, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (v_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=512, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (o_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=3584, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (rotary_emb): Qwen2RotaryEmbedding()
+            )
+            (mlp): Qwen2MLP(
+              (gate_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=18944, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (up_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=18944, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (down_proj): lora.Linear(
+                (base_layer): Linear(in_features=18944, out_features=3584, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=18944, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (act_fn): SiLU()
+            )
+            (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+            (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+          )
+        )
+        (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+        (rotary_emb): Qwen2RotaryEmbedding()
+      )
+      (lm_head): Linear(in_features=3584, out_features=152064, bias=False)
+    )
+  )
+)
+model_after lora booster:: PeftModelForCausalLM(
+  (base_model): LoraModel(
+    (model): Qwen2ForCausalLM(
+      (model): Qwen2Model(
+        (embed_tokens): Embedding(152064, 3584)
+        (layers): ModuleList(
+          (0-27): 28 x Qwen2DecoderLayer(
+            (self_attn): Qwen2Attention(
+              (q_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=3584, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (k_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=512, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (v_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=512, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (o_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=3584, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (rotary_emb): Qwen2RotaryEmbedding()
+            )
+            (mlp): Qwen2MLP(
+              (gate_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=18944, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (up_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=18944, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (down_proj): lora.Linear(
+                (base_layer): Linear(in_features=18944, out_features=3584, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=18944, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (act_fn): SiLU()
+            )
+            (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+            (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+          )
+        )
+        (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+        (rotary_emb): Qwen2RotaryEmbedding()
+      )
+      (lm_head): Linear(in_features=3584, out_features=152064, bias=False)
+    )
+  )
+)
+model_after ensure_hybrid_parallel_compatibility booster:: PeftModelForCausalLM(
+  (base_model): LoraModel(
+    (model): Qwen2ForCausalLM(
+      (model): Qwen2Model(
+        (embed_tokens): Embedding(152064, 3584)
+        (layers): ModuleList(
+          (0-27): 28 x Qwen2DecoderLayer(
+            (self_attn): Qwen2Attention(
+              (q_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=3584, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (k_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=512, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (v_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=512, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (o_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=3584, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (rotary_emb): Qwen2RotaryEmbedding()
+            )
+            (mlp): Qwen2MLP(
+              (gate_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=18944, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (up_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=18944, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (down_proj): lora.Linear(
+                (base_layer): Linear(in_features=18944, out_features=3584, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=18944, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (act_fn): SiLU()
+            )
+            (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+            (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+          )
+        )
+        (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+        (rotary_emb): Qwen2RotaryEmbedding()
+      )
+      (lm_head): Linear(in_features=3584, out_features=152064, bias=False)
+      (embed_tokens): Embedding(152064, 3584)
+      (layers): ModuleList(
+        (0-27): 28 x Qwen2DecoderLayer(
+          (self_attn): Qwen2Attention(
+            (q_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=3584, bias=True)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=3584, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (k_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=512, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (v_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=512, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (o_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=3584, bias=False)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=3584, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (rotary_emb): Qwen2RotaryEmbedding()
+          )
+          (mlp): Qwen2MLP(
+            (gate_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=18944, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (up_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=18944, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (down_proj): lora.Linear(
+              (base_layer): Linear(in_features=18944, out_features=3584, bias=False)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=18944, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=3584, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (act_fn): SiLU()
+          )
+          (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+          (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+        )
+      )
+      (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+    )
+  )
+  (embed_tokens): Embedding(152064, 3584)
+  (layers): ModuleList(
+    (0-27): 28 x Qwen2DecoderLayer(
+      (self_attn): Qwen2Attention(
+        (q_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=3584, bias=True)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=3584, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (k_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=512, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (v_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=512, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (o_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=3584, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=3584, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (rotary_emb): Qwen2RotaryEmbedding()
+      )
+      (mlp): Qwen2MLP(
+        (gate_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=18944, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (up_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=18944, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (down_proj): lora.Linear(
+          (base_layer): Linear(in_features=18944, out_features=3584, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=18944, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=3584, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (act_fn): SiLU()
+      )
+      (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+      (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+    )
+  )
+  (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+)
+=== debug values before model.train() ===
+print_flag=False
+should_log_wandb=False
+tokenizer.pad_token=<|im_end|>
+tokenizer.eos_token=<|im_end|>
+dataset=None
+train_ds=None
+dataloader=None
+torch_dtype=torch.bfloat16
+type(config)=Qwen2Config
+type(model)=PeftModelForCausalLM
+target_modules=['down_proj', 'gate_proj', 'k_proj', 'o_proj', 'q_proj', 'up_proj', 'v_proj']
+model.training=True
+
+=== named_modules sample ===
+: PeftModelForCausalLM
+base_model: LoraModel
+base_model.model: Qwen2ForCausalLM
+base_model.model.model: Qwen2Model
+base_model.model.model.embed_tokens: Embedding
+base_model.model.model.layers: ModuleList
+base_model.model.model.layers.0: Qwen2DecoderLayer
+base_model.model.model.layers.0.self_attn: Qwen2Attention
+base_model.model.model.layers.0.self_attn.q_proj: Linear
+base_model.model.model.layers.0.self_attn.q_proj.base_layer: Linear
+base_model.model.model.layers.0.self_attn.q_proj.lora_dropout: ModuleDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_dropout.default: Identity
+base_model.model.model.layers.0.self_attn.q_proj.lora_A: ModuleDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_A.default: Linear
+base_model.model.model.layers.0.self_attn.q_proj.lora_B: ModuleDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_B.default: Linear
+base_model.model.model.layers.0.self_attn.q_proj.lora_embedding_A: ParameterDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_embedding_B: ParameterDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_magnitude_vector: ModuleDict
+base_model.model.model.layers.0.self_attn.k_proj: Linear
+
+=== trainable params sample ===
+base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight: shape=(3584, 8) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight: shape=(512, 8) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight: shape=(512, 8) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight: shape=(3584, 8) dtype=torch.float32
+base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight: shape=(18944, 8) dtype=torch.float32
+base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight: shape=(18944, 8) dtype=torch.float32
+base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight: shape=(8, 18944) dtype=torch.float32
+base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight: shape=(3584, 8) dtype=torch.float32
+model_after ensure_hybrid_parallel_compatibility booster:: PeftModelForCausalLM(
+  (base_model): LoraModel(
+    (model): Qwen2ForCausalLM(
+      (model): Qwen2Model(
+        (embed_tokens): Embedding(152064, 3584)
+        (layers): ModuleList(
+          (0-27): 28 x Qwen2DecoderLayer(
+            (self_attn): Qwen2Attention(
+              (q_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=3584, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (k_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=512, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (v_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=512, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (o_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=3584, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (rotary_emb): Qwen2RotaryEmbedding()
+            )
+            (mlp): Qwen2MLP(
+              (gate_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=18944, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (up_proj): lora.Linear(
+                (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=3584, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=18944, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (down_proj): lora.Linear(
+                (base_layer): Linear(in_features=18944, out_features=3584, bias=False)
+                (lora_dropout): ModuleDict(
+                  (default): Identity()
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=18944, out_features=8, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=8, out_features=3584, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+                (lora_magnitude_vector): ModuleDict()
+              )
+              (act_fn): SiLU()
+            )
+            (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+            (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+          )
+        )
+        (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+        (rotary_emb): Qwen2RotaryEmbedding()
+      )
+      (lm_head): Linear(in_features=3584, out_features=152064, bias=False)
+      (embed_tokens): Embedding(152064, 3584)
+      (layers): ModuleList(
+        (0-27): 28 x Qwen2DecoderLayer(
+          (self_attn): Qwen2Attention(
+            (q_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=3584, bias=True)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=3584, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (k_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=512, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (v_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=512, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (o_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=3584, bias=False)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=3584, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (rotary_emb): Qwen2RotaryEmbedding()
+          )
+          (mlp): Qwen2MLP(
+            (gate_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=18944, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (up_proj): lora.Linear(
+              (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=3584, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=18944, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (down_proj): lora.Linear(
+              (base_layer): Linear(in_features=18944, out_features=3584, bias=False)
+              (lora_dropout): ModuleDict(
+                (default): Identity()
+              )
+              (lora_A): ModuleDict(
+                (default): Linear(in_features=18944, out_features=8, bias=False)
+              )
+              (lora_B): ModuleDict(
+                (default): Linear(in_features=8, out_features=3584, bias=False)
+              )
+              (lora_embedding_A): ParameterDict()
+              (lora_embedding_B): ParameterDict()
+              (lora_magnitude_vector): ModuleDict()
+            )
+            (act_fn): SiLU()
+          )
+          (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+          (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+        )
+      )
+      (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+    )
+  )
+  (embed_tokens): Embedding(152064, 3584)
+  (layers): ModuleList(
+    (0-27): 28 x Qwen2DecoderLayer(
+      (self_attn): Qwen2Attention(
+        (q_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=3584, bias=True)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=3584, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (k_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=512, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (v_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=512, bias=True)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=512, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (o_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=3584, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=3584, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (rotary_emb): Qwen2RotaryEmbedding()
+      )
+      (mlp): Qwen2MLP(
+        (gate_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=18944, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (up_proj): lora.Linear(
+          (base_layer): Linear(in_features=3584, out_features=18944, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=3584, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=18944, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (down_proj): lora.Linear(
+          (base_layer): Linear(in_features=18944, out_features=3584, bias=False)
+          (lora_dropout): ModuleDict(
+            (default): Identity()
+          )
+          (lora_A): ModuleDict(
+            (default): Linear(in_features=18944, out_features=8, bias=False)
+          )
+          (lora_B): ModuleDict(
+            (default): Linear(in_features=8, out_features=3584, bias=False)
+          )
+          (lora_embedding_A): ParameterDict()
+          (lora_embedding_B): ParameterDict()
+          (lora_magnitude_vector): ModuleDict()
+        )
+        (act_fn): SiLU()
+      )
+      (input_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+      (post_attention_layernorm): Qwen2RMSNorm((3584,), eps=1e-06)
+    )
+  )
+  (norm): Qwen2RMSNorm((3584,), eps=1e-06)
+)
+=== debug values before model.train() ===
+print_flag=True
+should_log_wandb=True
+tokenizer.pad_token=<|im_end|>
+tokenizer.eos_token=<|im_end|>
+dataset=None
+train_ds=None
+dataloader=None
+torch_dtype=torch.bfloat16
+type(config)=Qwen2Config
+type(model)=PeftModelForCausalLM
+target_modules=['down_proj', 'gate_proj', 'k_proj', 'o_proj', 'q_proj', 'up_proj', 'v_proj']
+model.training=True
+
+=== named_modules sample ===
+: PeftModelForCausalLM
+base_model: LoraModel
+base_model.model: Qwen2ForCausalLM
+base_model.model.model: Qwen2Model
+base_model.model.model.embed_tokens: Embedding
+base_model.model.model.layers.1.self_attn.q_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers: ModuleList
+base_model.model.model.layers.0: Qwen2DecoderLayer
+base_model.model.model.layers.0.self_attn: Qwen2Attention
+base_model.model.model.layers.0.self_attn.q_proj: Linear
+base_model.model.model.layers.0.self_attn.q_proj.base_layer: Linear
+base_model.model.model.layers.0.self_attn.q_proj.lora_dropout: ModuleDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_dropout.default: Identity
+base_model.model.model.layers.0.self_attn.q_proj.lora_A: ModuleDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_A.default: Linear
+base_model.model.model.layers.0.self_attn.q_proj.lora_B: ModuleDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_B.default: Linear
+base_model.model.model.layers.0.self_attn.q_proj.lora_embedding_A: ParameterDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_embedding_B: ParameterDict
+base_model.model.model.layers.0.self_attn.q_proj.lora_magnitude_vector: ModuleDict
+base_model.model.model.layers.0.self_attn.k_proj: Linear
+
+=== trainable params sample ===
+base_model.model.model.layers.1.self_attn.q_proj.lora_B.default.weight: shape=(3584, 8) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.k_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight: shape=(3584, 8) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.k_proj.lora_B.default.weight: shape=(512, 8) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.v_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight: shape=(512, 8) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.v_proj.lora_B.default.weight: shape=(512, 8) dtype=torch.float32
+
+Reached the exact point immediately before `model.train()`.
+base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight: shape=(512, 8) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight: shape=(3584, 8) dtype=torch.float32
+base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight: shape=(18944, 8) dtype=torch.float32
+base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight: shape=(18944, 8) dtype=torch.float32
+base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight: shape=(8, 18944) dtype=torch.float32
+base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight: shape=(3584, 8) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.q_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.q_proj.lora_B.default.weight: shape=(3584, 8) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.k_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.k_proj.lora_B.default.weight: shape=(512, 8) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.v_proj.lora_A.default.weight: shape=(8, 3584) dtype=torch.float32
+base_model.model.model.layers.1.self_attn.v_proj.lora_B.default.weight: shape=(512, 8) dtype=torch.float32
+
+Reached the exact point immediately before `model.train()`.
+[rank0]:[W316 08:32:28.889468291 ProcessGroupNCCL.cpp:1538] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())

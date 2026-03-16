@@ -104,6 +104,7 @@ def patch_qwen2_rotary_embedding_forward() -> None:
         if position_ids is None and seq_len is not None:
             batch_size = x.shape[0]
             actual_seq_len = x.shape[-2]
+            # actual_seq_len = seq_len
             position_ids = torch.arange(actual_seq_len, device=x.device).unsqueeze(0).expand(batch_size, -1)
         return original_forward(self, x, position_ids=position_ids, *args, **kwargs)
 
